@@ -401,6 +401,12 @@
                     {results.map((result, index) => {
                       const isBest = index === 0;
                       const incomeTaxOnly = result.tax - result.solidarity;
+                      
+                      // Obliczenie Efektywnego Opodatkowania
+                      // (Suma wszystkich obciążeń publicznych / Przychód całkowity) * 100
+                      const totalPublicBurden = incomeTaxOnly + result.health + (result.monthlySocialZus * 12) + result.solidarity;
+                      const effectiveTaxRate = totalAnnualRevenue > 0 ? (totalPublicBurden / totalAnnualRevenue) * 100 : 0;
+
                       return (
                         <div key={result.id} className={`tw-relative tw-bg-white tw-p-5 tw-rounded-xl tw-border-2 tw-transition-all ${isBest ? 'tw-border-emerald-500 tw-shadow-md' : 'tw-border-transparent tw-shadow-sm tw-hover:tw-border-slate-200'}`}>
                           {isBest && <div className="tw-absolute tw-top-0 tw-right-0 tw-bg-emerald-500 tw-text-white tw-text-xs tw-px-3 tw-py-1 tw-rounded-bl-lg tw-rounded-tr-lg tw-font-bold">ZWYCIĘZCA</div>}
@@ -427,6 +433,13 @@
                                       <div>Podatek (PIT): <b className="tw-text-slate-800">{formatNumber(incomeTaxOnly)} zł</b></div>
                                       <div>Składka Zdrowotna: <b className="tw-text-slate-800">{formatNumber(result.health)} zł</b></div>
                                       <div>Składki ZUS: <b className="tw-text-slate-800">{formatNumber(result.monthlySocialZus * 12)} zł</b></div>
+                                      
+                                      {/* --- NOWA POZYCJA: EFEKTYWNE OPODATKOWANIE --- */}
+                                      <div className="tw-col-span-2 sm:tw-col-span-3 tw-mt-1 tw-pt-1 tw-border-t tw-border-slate-100 tw-flex tw-justify-between tw-items-center">
+                                          <span>Efektywne opodatkowanie (obciążenie przychodu):</span>
+                                          <b className="tw-text-indigo-600 tw-text-sm">{effectiveTaxRate.toFixed(2)}%</b>
+                                      </div>
+                                      
                                       {result.solidarity > 0 && <div className="tw-col-span-2 tw-text-red-600">Danina Solidarnościowa: <b>{formatNumber(result.solidarity)} zł</b></div>}
                                   </div>
                               </div>
@@ -438,7 +451,7 @@
                             </div>
                           </div>
                           
-                          {/* Pasek wizualny (Zmienione tło na slate-400) */}
+                          {/* Pasek wizualny */}
                           <div className="tw-mt-4 tw-h-2 tw-w-full tw-bg-slate-400 tw-rounded-full tw-overflow-hidden tw-flex">
                              {totalAnnualRevenue > 0 && (
                                 <>
@@ -449,7 +462,7 @@
                                 </>
                              )}
                           </div>
-                          {/* Uproszczona Legenda (Zmieniony kolor na slate-400) */}
+                          {/* Uproszczona Legenda */}
                           <div className="tw-mt-2 tw-flex tw-flex-wrap tw-gap-x-4 tw-gap-y-1 tw-text-[10px] sm:tw-text-xs tw-text-slate-500">
                               <div className="tw-flex tw-items-center tw-gap-1">
                                   <div className="tw-w-3 tw-h-3 tw-rounded-full tw-bg-emerald-500"></div>
@@ -478,6 +491,76 @@
                       );
                     })}
                  </div>
+
+                 {/* Sekcja Wykresu Porównawczego Obciążeń (Nowa) */}
+                 {hasInput && results.length > 0 && (
+                    <div className="tw-bg-white tw-p-6 tw-rounded-xl tw-shadow-lg tw-border tw-border-slate-200 tw-mt-6">
+                        <h2 className="tw-text-lg tw-font-semibold tw-mb-8 tw-text-slate-800">Porównanie Rocznych Obciążeń (Podatki + ZUS)</h2>
+                        <div className="tw-flex tw-items-end tw-justify-around tw-h-64 tw-gap-4 md:tw-gap-8 tw-pb-2">
+                             {(() => {
+                                 const maxLoad = Math.max(...results.map(r => r.tax + r.health + (r.monthlySocialZus * 12)));
+                                 const scale = maxLoad > 0 ? maxLoad : 1;
+
+                                 return results.map(r => {
+                                     const annualZus = r.monthlySocialZus * 12;
+                                     const annualHealth = r.health;
+                                     const annualTax = r.tax;
+                                     const totalLoad = annualZus + annualHealth + annualTax;
+                                     const totalHeightPct = (totalLoad / scale) * 100;
+                                     
+                                     // Wysokości procentowe słupków (relative to scale)
+                                     const hZus = (annualZus / scale) * 100;
+                                     const hHealth = (annualHealth / scale) * 100;
+                                     const hTax = (annualTax / scale) * 100;
+                                     
+                                     const isBest = r === results[0];
+
+                                     return (
+                                        <div key={r.id} className="tw-flex tw-flex-col tw-items-center tw-w-full tw-max-w-[120px] tw-group">
+                                            {/* Słupek obciążeń - kontener */}
+                                            <div className="tw-w-full tw-flex tw-flex-col-reverse tw-relative tw-rounded-t-md tw-overflow-visible tw-shadow-sm tw-transition-all tw-duration-300 group-hover:tw-shadow-md" style={{ height: '200px' }}>
+                                                {/* Etykieta sumy nad słupkiem (pozycjonowana dynamicznie) */}
+                                                <div 
+                                                    className="tw-absolute tw-left-1/2 tw-transform tw--translate-x-1/2 tw-mb-2 tw-text-xs tw-font-bold tw-text-slate-700 tw-whitespace-nowrap"
+                                                    style={{ bottom: `${totalHeightPct}%` }}
+                                                >
+                                                    {formatNumber(totalLoad)} zł
+                                                </div>
+
+                                                {/* Warstwy słupka (kolejność od dołu: ZUS, NFZ, PIT) */}
+                                                <div className="tw-w-full tw-bg-yellow-500 tw-relative tw-group" style={{ height: `${hZus}%` }}></div>
+                                                <div className="tw-w-full tw-bg-blue-400 tw-relative tw-group" style={{ height: `${hHealth}%` }}></div>
+                                                <div className="tw-w-full tw-bg-red-400 tw-relative tw-group tw-rounded-t-md" style={{ height: `${hTax}%` }}></div>
+                                            </div>
+                                            
+                                            {/* Etykieta pod słupkiem */}
+                                            <div className="tw-mt-3 tw-text-center">
+                                                <div className={`tw-text-xs tw-font-bold ${isBest ? 'tw-text-emerald-600' : 'tw-text-slate-700'}`}>
+                                                    {r.id === 'skala' ? 'Skala' : r.id === 'liniowy' ? 'Liniowy' : 'Ryczałt'}
+                                                </div>
+                                                {isBest && <div className="tw-text-[10px] tw-text-emerald-500 tw-font-semibold">Najlepsza</div>}
+                                            </div>
+                                        </div>
+                                     );
+                                 });
+                             })()}
+                        </div>
+                        {/* Legenda wykresu */}
+                        <div className="tw-mt-6 tw-flex tw-justify-center tw-flex-wrap tw-gap-4 tw-text-xs tw-text-slate-500 tw-pt-4 tw-border-t tw-border-slate-100">
+                             <div className="tw-flex tw-items-center tw-gap-2">
+                                  <div className="tw-w-3 tw-h-3 tw-bg-red-400 tw-rounded-sm"></div> Podatek (PIT)
+                             </div>
+                             <div className="tw-flex tw-items-center tw-gap-2">
+                                  <div className="tw-w-3 tw-h-3 tw-bg-blue-400 tw-rounded-sm"></div> Zdrowotna (NFZ)
+                             </div>
+                             <div className="tw-flex tw-items-center tw-gap-2">
+                                  <div className="tw-w-3 tw-h-3 tw-bg-yellow-500 tw-rounded-sm"></div> Społeczne (ZUS)
+                             </div>
+                        </div>
+                    </div>
+                 )}
+                 {/* Koniec sekcji wykresu */}
+
               </div>
             </div>
           </div>
