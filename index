@@ -1,0 +1,563 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+<meta charset="UTF-8">
+<!-- Stylizacja: Tailwind CSS w trybie bezpiecznym (nie psuje strony WP) -->
+<script src="https://cdn.tailwindcss.com"></script>
+<script>
+  tailwind.config = {
+    corePlugins: {
+      preflight: false, // Wyłącza reset stylów, aby nie zepsuć wyglądu Twojej strony WP
+    },
+    prefix: 'tw-', // Prefiks klas, aby nie kolidowały z motywem
+  }
+</script>
+
+<!-- Biblioteki React -->
+<script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+<script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+<script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+<style>
+    /* Izolowany kontener dla kalkulatora */
+    #tax-calculator-root {
+        font-family: 'Inter', system-ui, -apple-system, sans-serif;
+        background-color: #f8fafc;
+        border-radius: 12px;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+        padding: 24px;
+        margin: 20px 0;
+        color: #1e293b;
+        line-height: 1.5;
+    }
+    
+    /* Reset podstawowych elementów wewnątrz kalkulatora */
+    #tax-calculator-root *, #tax-calculator-root ::before, #tax-calculator-root ::after {
+        box-sizing: border-box;
+        border-width: 0;
+        border-style: solid;
+        border-color: #e2e8f0;
+    }
+
+    /* Style formularzy */
+    #tax-calculator-root input[type="number"], 
+    #tax-calculator-root select {
+        display: block;
+        width: 100%;
+        padding: 0.5rem 0.75rem;
+        font-size: 0.875rem;
+        line-height: 1.25rem;
+        border-radius: 0.5rem;
+        border-width: 1px;
+        border-color: #cbd5e1;
+        background-color: #fff;
+        margin-top: 0.25rem;
+        color: #0f172a;
+    }
+    
+    #tax-calculator-root input:focus, 
+    #tax-calculator-root select:focus {
+        outline: 2px solid transparent;
+        outline-offset: 2px;
+        border-color: #3b82f6;
+        box-shadow: 0 0 0 2px #bfdbfe;
+    }
+    
+    #tax-calculator-root button:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+    }
+</style>
+</head>
+<body>
+
+<!-- Kontener aplikacji -->
+<div id="tax-calculator-root"></div>
+
+<!-- Logika aplikacji -->
+<script type="text/babel">
+    const { useState, useMemo, useCallback } = React;
+
+    // --- 1. IKONY SVG (Wbudowane dla niezawodności) ---
+    const CalculatorIcon = ({ size = 24, className }) => (
+        <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><rect width="16" height="20" x="4" y="2" rx="2"/><line x1="8" x2="16" y1="6" y2="6"/><line x1="16" x2="16" y1="14" y2="18"/><line x1="8" x2="8" y1="14" y2="18"/><line x1="12" x2="12" y1="14" y2="18"/><line x1="8" x2="16" y1="10" y2="10"/></svg>
+    );
+    const DollarSignIcon = ({ size = 24, className }) => (
+        <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><line x1="12" x2="12" y1="2" y2="22"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+    );
+    const TrendingUpIcon = ({ size = 24, className }) => (
+        <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></svg>
+    );
+    const SettingsIcon = ({ size = 24, className }) => (
+        <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.47a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg>
+    );
+    const UsersIcon = ({ size = 24, className }) => (
+        <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+    );
+
+    // --- 2. STAŁE PODATKOWE ---
+    const TAX_FREE_AMOUNT = 30000;
+    const TAX_THRESHOLD = 120000;
+    const SOLIDARITY_THRESHOLD = 1000000;
+    const SOLIDARITY_RATE = 0.04;
+
+    const MONTHLY_ZUS_RATES = {
+        duzy: 1600,         
+        ulga: 0,            
+        preferencyjny: 600, 
+        maly_plus: 400,     
+    };
+
+    // --- 3. FUNKCJE POMOCNICZE I LOGIKA ---
+    
+    // Funkcja formatująca liczby ze spacją jako separatorem tysięcy (np. "6 693")
+    const formatNumber = (num) => {
+        if (num === null || isNaN(num)) return '0';
+        // Używamy replace na stringu, aby wymusić spację jako separator
+        return Math.round(num).toString().replace(/\B(?=(\d{3})+(?!\d))/g, " ");
+    };
+
+    const calculateScaleTaxValue = (income) => {
+        let tax = 0;
+        const taxReductionAmount = 3600; 
+        if (income <= TAX_FREE_AMOUNT) {
+          tax = 0;
+        } else if (income <= TAX_THRESHOLD) {
+          tax = (income * 0.12) - taxReductionAmount;
+        } else {
+          tax = (TAX_THRESHOLD * 0.12 - taxReductionAmount) + ((income - TAX_THRESHOLD) * 0.32);
+        }
+        return Math.max(0, tax);
+    };
+
+    const calculateTaxes = (
+        monthlyRevenue, 
+        monthlyCosts, 
+        ryczaltRate, 
+        zusType, 
+        isJointSettlement, 
+        spouseMonthlyIncome
+    ) => {
+        const revenue = monthlyRevenue || 0;
+        const costs = monthlyCosts || 0;
+        const spouseIncome = spouseMonthlyIncome || 0;
+        
+        const annualRevenue = revenue * 12;
+        const annualCosts = costs * 12;
+        
+        const monthlySocialZus = MONTHLY_ZUS_RATES[zusType];
+        const annualSocialZus = monthlySocialZus * 12;
+        
+        const results = [];
+
+        // 1. SKALA PODATKOWA
+        const scaleIncome = Math.max(0, annualRevenue - annualCosts - annualSocialZus);
+        const scaleHealth = scaleIncome * 0.09; 
+        let scaleTax = 0;
+        let scaleSolidarityTax = 0;
+
+        if (isJointSettlement) {
+          const annualSpouseIncome = spouseIncome * 12;
+          const totalJointIncome = scaleIncome + annualSpouseIncome;
+          const halfIncome = totalJointIncome / 2;
+          const totalJointTax = calculateScaleTaxValue(halfIncome) * 2;
+          const spouseSoloTax = calculateScaleTaxValue(annualSpouseIncome);
+          scaleTax = Math.max(0, totalJointTax - spouseSoloTax);
+          if (scaleIncome > SOLIDARITY_THRESHOLD) {
+              scaleSolidarityTax = (scaleIncome - SOLIDARITY_THRESHOLD) * SOLIDARITY_RATE;
+          }
+        } else {
+          scaleTax = calculateScaleTaxValue(scaleIncome);
+          if (scaleIncome > SOLIDARITY_THRESHOLD) {
+              scaleSolidarityTax = (scaleIncome - SOLIDARITY_THRESHOLD) * SOLIDARITY_RATE;
+          }
+        }
+        scaleTax += scaleSolidarityTax;
+        const scaleNet = annualRevenue - annualCosts - annualSocialZus - scaleHealth - scaleTax;
+
+        results.push({ 
+            id: 'skala', 
+            name: isJointSettlement ? 'Skala (Wspólne)' : 'Skala Podatkowa', 
+            net: scaleNet, 
+            tax: scaleTax, 
+            solidarity: scaleSolidarityTax,
+            health: scaleHealth,
+            monthlyNet: scaleNet / 12,
+            monthlyTax: scaleTax / 12,
+            monthlyHealth: scaleHealth / 12,
+            monthlySocialZus: monthlySocialZus,
+            details: isJointSettlement ? 'Uwzględniono dochód małżonka.' : 'Opłacalne przy niższych dochodach.' 
+        });
+
+        // 2. PODATEK LINIOWY
+        const linearIncome = Math.max(0, annualRevenue - annualCosts - annualSocialZus);
+        const linearHealth = linearIncome * 0.049; 
+        const deductibleHealth = Math.min(linearHealth, 11600); 
+        const linearTaxBase = Math.max(0, linearIncome - deductibleHealth);
+        let linearTax = linearTaxBase * 0.19;
+        let linearSolidarityTax = 0; 
+        if (linearIncome > SOLIDARITY_THRESHOLD) {
+            linearSolidarityTax = (linearIncome - SOLIDARITY_THRESHOLD) * SOLIDARITY_RATE;
+        }
+        linearTax += linearSolidarityTax;
+        const linearNet = annualRevenue - annualCosts - annualSocialZus - linearHealth - linearTax;
+
+        results.push({ 
+            id: 'liniowy', 
+            name: 'Podatek Liniowy (19%)', 
+            net: linearNet, 
+            tax: linearTax, 
+            solidarity: linearSolidarityTax,
+            health: linearHealth,
+            monthlyNet: linearNet / 12,
+            monthlyTax: linearTax / 12,
+            monthlyHealth: linearHealth / 12,
+            monthlySocialZus: monthlySocialZus,
+            details: 'Stała stawka 19%. Brak możliwości wspólnego rozliczenia.' 
+        });
+
+        // 3. RYCZAŁT
+        const ryczaltTaxBase = Math.max(0, annualRevenue - annualSocialZus);
+        const ryczaltTax = ryczaltTaxBase * (ryczaltRate / 100);
+        const ryczaltSolidarityTax = 0; 
+
+        let monthlyRyczaltHealth = 0;
+        if (annualRevenue < 60000) monthlyRyczaltHealth = 419;
+        else if (annualRevenue < 300000) monthlyRyczaltHealth = 699;
+        else monthlyRyczaltHealth = 1258;
+        
+        const annualRyczaltHealth = monthlyRyczaltHealth * 12;
+        const ryczaltNet = annualRevenue - annualCosts - annualSocialZus - annualRyczaltHealth - ryczaltTax;
+        
+        results.push({ 
+            id: 'ryczalt', 
+            name: `Ryczałt (${ryczaltRate}%)`, 
+            net: ryczaltNet, 
+            tax: ryczaltTax, 
+            solidarity: ryczaltSolidarityTax,
+            health: annualRyczaltHealth,
+            monthlyNet: ryczaltNet / 12,
+            monthlyTax: ryczaltTax / 12,
+            monthlyHealth: monthlyRyczaltHealth, 
+            monthlySocialZus: monthlySocialZus,
+            details: 'Opodatkowanie od przychodu.' 
+        });
+        
+        return results.sort((a, b) => b.net - a.net);
+    };
+
+    // --- 4. GŁÓWNY KOMPONENT ---
+    function TaxCalculator() {
+      const [monthlyRevenue, setMonthlyRevenue] = useState(null); 
+      const [monthlyCosts, setMonthlyCosts] = useState(null);
+      const [ryczaltRate, setRyczaltRate] = useState(12);
+      const [zusType, setZusType] = useState('duzy');
+      const [isJointSettlement, setIsJointSettlement] = useState(false);
+      const [spouseMonthlyIncome, setSpouseMonthlyIncome] = useState(null);
+
+      const hasInput = useMemo(() => monthlyRevenue !== null && monthlyRevenue > 0, [monthlyRevenue]);
+      const results = useMemo(() => {
+        if (!hasInput) return [];
+        return calculateTaxes(
+            monthlyRevenue, 
+            monthlyCosts, 
+            ryczaltRate, 
+            zusType, 
+            isJointSettlement, 
+            spouseMonthlyIncome
+        );
+      }, [monthlyRevenue, monthlyCosts, ryczaltRate, zusType, isJointSettlement, spouseMonthlyIncome]);
+      
+      const bestOption = results[0] || {};
+      const totalAnnualRevenue = (monthlyRevenue || 0) * 12;
+      const totalAnnualCosts = (monthlyCosts || 0) * 12;
+
+      const handleInputChange = (e, setter) => {
+        const value = e.target.value;
+        setter(value === '' ? null : Number(value));
+      };
+
+      return (
+        <div className="tw-min-h-screen tw-bg-slate-50 tw-p-4 md:tw-p-8">
+          <div className="tw-max-w-5xl tw-mx-auto">
+            
+            {/* Header */}
+            <header className="tw-mb-8 tw-text-center md:tw-text-left tw-flex tw-items-center tw-gap-3">
+              <div className="tw-bg-blue-600 tw-p-3 tw-rounded-lg tw-shadow-lg tw-text-white">
+                <CalculatorIcon size={32} />
+              </div>
+              <div>
+                <h1 className="tw-text-3xl tw-font-bold tw-text-slate-900 tw-m-0">Kalkulator wyboru form opodatkowania</h1>
+                <p className="tw-text-slate-500 tw-m-0">Porównaj formy opodatkowania</p>
+              </div>
+            </header>
+
+            <div className="tw-grid tw-grid-cols-1 lg:tw-grid-cols-3 tw-gap-8">
+              
+              {/* Lewa kolumna - Konfiguracja */}
+              <div className="lg:tw-col-span-1 tw-space-y-6">
+                
+                {/* Panel Parametry */}
+                <div className="tw-bg-white tw-p-6 tw-rounded-xl tw-shadow-sm tw-border tw-border-slate-200">
+                  <h2 className="tw-text-lg tw-font-semibold tw-mb-4 tw-flex tw-items-center tw-gap-2">
+                    <DollarSignIcon className="tw-text-blue-600" size={20} />
+                    Parametry Miesięczne
+                  </h2>
+                  <div className="tw-space-y-4">
+                    <div>
+                      <label className="tw-block tw-text-sm tw-font-medium tw-text-slate-700 tw-mb-1">Przychód netto (bez VAT)</label>
+                      <input type="number" value={monthlyRevenue === null ? '' : monthlyRevenue} onChange={(e) => handleInputChange(e, setMonthlyRevenue)} placeholder="np. 15000" className="" />
+                    </div>
+                    <div>
+                      <label className="tw-block tw-text-sm tw-font-medium tw-text-slate-700 tw-mb-1">Koszty firmowe netto</label>
+                      <input type="number" value={monthlyCosts === null ? '' : monthlyCosts} onChange={(e) => handleInputChange(e, setMonthlyCosts)} placeholder="np. 2000" className="" />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Panel Ustawienia */}
+                <div className="tw-bg-white tw-p-6 tw-rounded-xl tw-shadow-sm tw-border tw-border-slate-200">
+                  <h2 className="tw-text-lg tw-font-semibold tw-mb-4 tw-flex tw-items-center tw-gap-2">
+                    <SettingsIcon className="tw-text-purple-600" size={20} />
+                    Ustawienia ZUS i Ryczałtu
+                  </h2>
+                  <div className="tw-space-y-4">
+                    <div>
+                      <label className="tw-block tw-text-sm tw-font-medium tw-text-slate-700 tw-mb-1">Rodzaj ZUS (Społeczna)</label>
+                      <select value={zusType} onChange={(e) => setZusType(e.target.value)}>
+                        <option value="duzy">Pełna społeczna ZUS + FP (Standard)</option>
+                        <option value="ulga">Ulga na start (Społeczna: 0 zł, max 6 mies.)</option>
+                        <option value="preferencyjny">ZUS Preferencyjny / Mały ZUS (max 24 mies.)</option>
+                        <option value="maly_plus">Mały ZUS Plus (max 36 mies.)</option>
+                      </select>
+                       <p className="tw-text-xs tw-text-slate-500 tw-mt-2">Składka zdrowotna ZUS jest doliczana automatycznie.</p>
+                    </div>
+                    <div>
+                      <label className="tw-block tw-text-sm tw-font-medium tw-text-slate-700 tw-mb-1">Stawka Ryczałtu</label>
+                      <select value={ryczaltRate} onChange={(e) => setRyczaltRate(Number(e.target.value))}>
+                        <option value="17">17% - Wolne zawody (np. tłumacze, adwokaci)</option>
+                        <option value="15">15% - Doradztwo, Prawo, Księgowość, Inżynieria (PKD 69, 70.22, 71.12)</option>
+                        <option value="14">14% - Inżynieria, Architektura, Zdrowie (PKD 71.11, 86)</option>
+                        <option value={12}>12% - IT: Programiści, Hardware (PKD 62.01.1, 62.02)</option>
+                        <option value={10}>10% - Handel nieruchomościami na wł. rachunek (PKD 68.10)</option>
+                        <option value={8.5}>8.5% - Usługi (edukacja, fryzjer), Gastronomia z alkoholem, Najem</option>
+                        <option value={5.5}>5.5% - Budowlanka, Przewozy &gt;2t, Wytwórczość (PKD 41-43)</option>
+                        <option value={3}>3.0% - Handel (sprzedaż towarów), Gastronomia (bez alkoholu)</option>
+                        <option value={2}>2.0% - Produkty rolne</option>
+                      </select>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Panel Małżonek */}
+                <div className="tw-bg-white tw-p-6 tw-rounded-xl tw-shadow-sm tw-border tw-border-slate-200">
+                   <h2 className="tw-text-lg tw-font-semibold tw-mb-4 tw-flex tw-items-center tw-gap-2">
+                    <UsersIcon className="tw-text-emerald-600" size={20} />
+                    Rozliczenie z Małżonkiem
+                  </h2>
+                  <div className="tw-flex tw-items-center tw-gap-3 tw-mb-4">
+                    <div onClick={() => setIsJointSettlement(!isJointSettlement)} className={`tw-w-12 tw-h-6 tw-rounded-full tw-p-1 tw-cursor-pointer tw-transition-colors tw-duration-300 ${isJointSettlement ? 'tw-bg-emerald-500' : 'tw-bg-slate-300'}`}>
+                      <div className={`tw-w-4 tw-h-4 tw-rounded-full tw-bg-white tw-shadow-sm tw-transform tw-transition-transform tw-duration-300 ${isJointSettlement ? 'tw-translate-x-6' : 'tw-translate-x-0'}`} />
+                    </div>
+                    <span className="tw-text-sm tw-font-medium tw-text-slate-700">Wspólne rozliczenie</span>
+                  </div>
+                  {isJointSettlement && (
+                    <div className="tw-animate-in tw-slide-in-from-top-2 tw-duration-200">
+                      <label className="tw-block tw-text-sm tw-font-medium tw-text-slate-700 tw-mb-1">Dochód miesięczny małżonka</label>
+                      <input type="number" value={spouseMonthlyIncome === null ? '' : spouseMonthlyIncome} onChange={(e) => handleInputChange(e, setSpouseMonthlyIncome)} placeholder="np. 5000" />
+                      <p className="tw-text-xs tw-text-slate-500 tw-mt-2">Dotyczy tylko Skali Podatkowej.</p>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Prawa kolumna - Wyniki */}
+              <div className="lg:tw-col-span-2 tw-space-y-6">
+                 {hasInput && results.length > 0 ? (
+                    <div className="tw-bg-gradient-to-r tw-from-emerald-500 tw-to-teal-600 tw-rounded-xl tw-p-6 tw-text-white tw-shadow-lg tw-relative tw-overflow-hidden">
+                      <div className="tw-relative tw-z-10">
+                        <div className="tw-flex tw-items-center tw-gap-2 tw-mb-2 tw-opacity-90">
+                          <TrendingUpIcon size={20} />
+                          <span className="tw-font-medium tw-tracking-wide tw-text-sm tw-uppercase">Najbardziej opłacalna opcja</span>
+                        </div>
+                        <h3 className="tw-text-3xl md:tw-text-4xl tw-font-bold tw-mb-1">{bestOption.name}</h3>
+                        <div className="tw-flex tw-items-baseline tw-gap-2 tw-mt-4">
+                          <span className="tw-text-4xl md:tw-text-5xl tw-font-bold">{formatNumber(bestOption.monthlyNet)} zł</span>
+                          <span className="tw-opacity-80">/ miesięcznie "na rękę"</span>
+                        </div>
+                        <div className="tw-mt-2 tw-text-sm tw-opacity-80">Rocznie na rękę: {formatNumber(bestOption.net)} zł</div>
+                      </div>
+                      <div className="tw-absolute tw-right-0 tw-bottom-0 tw-opacity-10 tw-transform tw-translate-x-1/4 tw-translate-y-1/4"><DollarSignIcon size={300} /></div>
+                    </div>
+                 ) : (
+                    <div className="tw-bg-white tw-p-6 tw-rounded-xl tw-shadow-lg tw-border tw-border-slate-200 tw-text-center tw-text-slate-500 tw-flex tw-flex-col tw-items-center tw-justify-center tw-min-h-[180px]">
+                        <CalculatorIcon size={48} className="tw-mb-3 tw-text-blue-400" />
+                        <p className="tw-font-medium">Wprowadź przychód (większy niż 0) i koszty, aby zobaczyć wyniki.</p>
+                    </div>
+                 )}
+
+                 {/* Lista Wyników */}
+                 <div className="tw-grid tw-gap-4">
+                    {results.map((result, index) => {
+                      const isBest = index === 0;
+                      const incomeTaxOnly = result.tax - result.solidarity;
+                      return (
+                        <div key={result.id} className={`tw-relative tw-bg-white tw-p-5 tw-rounded-xl tw-border-2 tw-transition-all ${isBest ? 'tw-border-emerald-500 tw-shadow-md' : 'tw-border-transparent tw-shadow-sm tw-hover:tw-border-slate-200'}`}>
+                          {isBest && <div className="tw-absolute tw-top-0 tw-right-0 tw-bg-emerald-500 tw-text-white tw-text-xs tw-px-3 tw-py-1 tw-rounded-bl-lg tw-rounded-tr-lg tw-font-bold">ZWYCIĘZCA</div>}
+                          <div className="tw-flex tw-flex-col md:tw-flex-row tw-justify-between md:tw-items-center tw-gap-4">
+                            <div className="tw-flex-1">
+                              <h4 className="tw-font-bold tw-text-lg tw-text-slate-800 tw-flex tw-items-center tw-gap-2">
+                                {result.name}
+                                {result.id === 'skala' && isJointSettlement && <span className="tw-bg-emerald-100 tw-text-emerald-700 tw-text-xs tw-px-2 tw-py-0.5 tw-rounded-full tw-font-normal">z małżonkiem</span>}
+                              </h4>
+                              <p className="tw-text-sm tw-text-slate-500 tw-mt-1">{result.details}</p>
+                              <div className="tw-mt-3 tw-flex tw-flex-wrap tw-gap-x-6 tw-gap-y-1 tw-text-xs tw-text-slate-500">
+                                 <span>Śr. podatek: <b className="tw-text-slate-700">{formatNumber(incomeTaxOnly / 12)} zł</b></span>
+                                 <span>Śr. zdrowotna: <b className="tw-text-slate-700">{formatNumber(result.monthlyHealth)} zł</b></span>
+                                 <span>ZUS społ.: <b className="tw-text-slate-700">{formatNumber(result.monthlySocialZus)} zł</b></span>
+                              </div>
+                              
+                              {/* --- PODSUMOWANIE ROCZNE (Pełne) --- */}
+                              <div className="tw-mt-4 tw-pt-3 tw-border-t tw-border-slate-100">
+                                  <p className="tw-text-xs tw-font-semibold tw-text-slate-500 tw-mb-2">Podsumowanie Roczne:</p>
+                                  <div className="tw-grid tw-grid-cols-2 sm:tw-grid-cols-3 tw-gap-y-2 tw-gap-x-4 tw-text-xs tw-text-slate-600">
+                                      <div>Przychody: <b className="tw-text-slate-800">{formatNumber(totalAnnualRevenue)} zł</b></div>
+                                      <div>Koszty: <b className="tw-text-slate-800">{formatNumber(totalAnnualCosts)} zł</b></div>
+                                      <div>Dochód Netto: <b className="tw-text-emerald-700">{formatNumber(result.net)} zł</b></div>
+                                      <div>Podatek (PIT): <b className="tw-text-slate-800">{formatNumber(incomeTaxOnly)} zł</b></div>
+                                      <div>Składka Zdrowotna: <b className="tw-text-slate-800">{formatNumber(result.health)} zł</b></div>
+                                      <div>Składki ZUS: <b className="tw-text-slate-800">{formatNumber(result.monthlySocialZus * 12)} zł</b></div>
+                                      {result.solidarity > 0 && <div className="tw-col-span-2 tw-text-red-600">Danina Solidarnościowa: <b>{formatNumber(result.solidarity)} zł</b></div>}
+                                  </div>
+                              </div>
+
+                            </div>
+                            <div className="tw-text-right tw-shrink-0">
+                              <div className="tw-text-xs tw-text-slate-400 tw-mb-1">Twoje "na rękę" (śr. mies.)</div>
+                              <div className={`tw-text-2xl tw-font-bold ${isBest ? 'tw-text-emerald-600' : 'tw-text-slate-700'}`}>{formatNumber(result.monthlyNet)} zł</div>
+                            </div>
+                          </div>
+                          
+                          {/* Pasek wizualny */}
+                          <div className="tw-mt-4 tw-h-2 tw-w-full tw-bg-slate-400 tw-rounded-full tw-overflow-hidden tw-flex">
+                             {totalAnnualRevenue > 0 && (
+                                <>
+                                  <div className="tw-bg-emerald-500" style={{ width: `${(result.net / totalAnnualRevenue) * 100}%` }} title={`Netto: ${formatNumber(result.net)} zł`}/>
+                                  <div className="tw-bg-red-400" style={{ width: `${(result.tax / totalAnnualRevenue) * 100}%` }} title={`Podatek: ${formatNumber(result.tax)} zł`}/>
+                                  <div className="tw-bg-blue-400" style={{ width: `${(result.health / totalAnnualRevenue) * 100}%` }} title={`Zdrowotna: ${formatNumber(result.health)} zł`}/>
+                                  <div className="tw-bg-yellow-500" style={{ width: `${(result.monthlySocialZus * 12 / totalAnnualRevenue) * 100}%` }} title={`Społeczny ZUS: ${formatNumber(result.monthlySocialZus * 12)} zł`}/>
+                                </>
+                             )}
+                          </div>
+                          {/* Uproszczona Legenda */}
+                          <div className="tw-mt-2 tw-flex tw-flex-wrap tw-gap-x-4 tw-gap-y-1 tw-text-[10px] sm:tw-text-xs tw-text-slate-500">
+                              <div className="tw-flex tw-items-center tw-gap-1">
+                                  <div className="tw-w-3 tw-h-3 tw-rounded-full tw-bg-emerald-500"></div>
+                                  <span>Zysk Netto</span>
+                              </div>
+                              <div className="tw-flex tw-items-center tw-gap-1">
+                                  <div className="tw-w-3 tw-h-3 tw-rounded-full tw-bg-red-400"></div>
+                                  <span>Podatek</span>
+                              </div>
+                              <div className="tw-flex tw-items-center tw-gap-1">
+                                  <div className="tw-w-3 tw-h-3 tw-rounded-full tw-bg-blue-400"></div>
+                                  <span>Zdrowotna</span>
+                              </div>
+                              <div className="tw-flex tw-items-center tw-gap-1">
+                                  <div className="tw-w-3 tw-h-3 tw-rounded-full tw-bg-yellow-500"></div>
+                                  <span>ZUS</span>
+                              </div>
+                              {(totalAnnualRevenue - (result.net + result.tax + result.health + result.monthlySocialZus * 12)) > 1 && (
+                                   <div className="tw-flex tw-items-center tw-gap-1">
+                                      <div className="tw-w-3 tw-h-3 tw-rounded-full tw-bg-slate-400"></div>
+                                      <span>Koszty</span>
+                                  </div>
+                              )}
+                          </div>
+                        </div>
+                      );
+                    })}
+                 </div>
+
+                 {/* Sekcja Wykresu Porównawczego Obciążeń (Nowa) */}
+                 {hasInput && results.length > 0 && (
+                    <div className="tw-bg-white tw-p-6 tw-rounded-xl tw-shadow-lg tw-border tw-border-slate-200 tw-mt-6">
+                        <h2 className="tw-text-lg tw-font-semibold tw-mb-8 tw-text-slate-800">Porównanie Rocznych Obciążeń (Podatki + ZUS)</h2>
+                        <div className="tw-flex tw-items-end tw-justify-around tw-h-64 tw-gap-4 md:tw-gap-8 tw-pb-2">
+                             {(() => {
+                                 const maxLoad = Math.max(...results.map(r => r.tax + r.health + (r.monthlySocialZus * 12)));
+                                 const scale = maxLoad > 0 ? maxLoad : 1;
+
+                                 return results.map(r => {
+                                     const annualZus = r.monthlySocialZus * 12;
+                                     const annualHealth = r.health;
+                                     const annualTax = r.tax;
+                                     const totalLoad = annualZus + annualHealth + annualTax;
+                                     const totalHeightPct = (totalLoad / scale) * 100;
+                                     
+                                     // Wysokości procentowe słupków (relative to scale)
+                                     const hZus = (annualZus / scale) * 100;
+                                     const hHealth = (annualHealth / scale) * 100;
+                                     const hTax = (annualTax / scale) * 100;
+                                     
+                                     const isBest = r === results[0];
+
+                                     return (
+                                        <div key={r.id} className="tw-flex tw-flex-col tw-items-center tw-w-full tw-max-w-[120px] tw-group">
+                                            {/* Słupek obciążeń - kontener */}
+                                            <div className="tw-w-full tw-flex tw-flex-col-reverse tw-relative tw-rounded-t-md tw-overflow-visible tw-shadow-sm tw-transition-all tw-duration-300 group-hover:tw-shadow-md" style={{ height: '200px' }}>
+                                                {/* Etykieta sumy nad słupkiem (pozycjonowana dynamicznie) */}
+                                                <div 
+                                                    className="tw-absolute tw-left-1/2 tw-transform tw--translate-x-1/2 tw-mb-2 tw-text-xs tw-font-bold tw-text-slate-700 tw-whitespace-nowrap"
+                                                    style={{ bottom: `${totalHeightPct}%` }}
+                                                >
+                                                    {formatNumber(totalLoad)} zł
+                                                </div>
+
+                                                {/* Warstwy słupka (kolejność od dołu: ZUS, NFZ, PIT) */}
+                                                <div className="tw-w-full tw-bg-yellow-500 tw-relative tw-group" style={{ height: `${hZus}%` }}></div>
+                                                <div className="tw-w-full tw-bg-blue-400 tw-relative tw-group" style={{ height: `${hHealth}%` }}></div>
+                                                <div className="tw-w-full tw-bg-red-400 tw-relative tw-group tw-rounded-t-md" style={{ height: `${hTax}%` }}></div>
+                                            </div>
+                                            
+                                            {/* Etykieta pod słupkiem */}
+                                            <div className="tw-mt-3 tw-text-center">
+                                                <div className={`tw-text-xs tw-font-bold ${isBest ? 'tw-text-emerald-600' : 'tw-text-slate-700'}`}>
+                                                    {r.id === 'skala' ? 'Skala' : r.id === 'liniowy' ? 'Liniowy' : 'Ryczałt'}
+                                                </div>
+                                                {isBest && <div className="tw-text-[10px] tw-text-emerald-500 tw-font-semibold">Najlepsza</div>}
+                                            </div>
+                                        </div>
+                                     );
+                                 });
+                             })()}
+                        </div>
+                        {/* Legenda wykresu */}
+                        <div className="tw-mt-6 tw-flex tw-justify-center tw-flex-wrap tw-gap-4 tw-text-xs tw-text-slate-500 tw-pt-4 tw-border-t tw-border-slate-100">
+                             <div className="tw-flex tw-items-center tw-gap-2">
+                                  <div className="tw-w-3 tw-h-3 tw-bg-red-400 tw-rounded-sm"></div> Podatek (PIT)
+                             </div>
+                             <div className="tw-flex tw-items-center tw-gap-2">
+                                  <div className="tw-w-3 tw-h-3 tw-bg-blue-400 tw-rounded-sm"></div> Zdrowotna (NFZ)
+                             </div>
+                             <div className="tw-flex tw-items-center tw-gap-2">
+                                  <div className="tw-w-3 tw-h-3 tw-bg-yellow-500 tw-rounded-sm"></div> Społeczne (ZUS)
+                             </div>
+                        </div>
+                    </div>
+                 )}
+                 {/* Koniec sekcji wykresu */}
+
+              </div>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    const container = document.getElementById('tax-calculator-root');
+    const root = ReactDOM.createRoot(container);
+    root.render(React.createElement(TaxCalculator));
+</script>
+</body>
+</html>
