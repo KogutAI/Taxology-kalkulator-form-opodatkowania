@@ -10,8 +10,32 @@
       preflight: false, // Wyłącza reset stylów, aby nie zepsuć wyglądu Twojej strony WP
     },
     prefix: 'tw-', // Prefiks klas, aby nie kolidowały z motywem
+    theme: {
+      extend: {
+        fontFamily: {
+          sans: ['"Poppins"', 'sans-serif'], // Zmiana na Poppins
+        },
+        colors: {
+          brand: {
+            50: '#eff6ff',
+            100: '#dbeafe',
+            500: '#3b82f6',
+            600: '#2563eb',
+            700: '#1d4ed8',
+          }
+        },
+        boxShadow: {
+          'modern': '0 4px 20px -2px rgba(0, 0, 0, 0.05), 0 2px 10px -2px rgba(0, 0, 0, 0.02)', // Bardziej miękki cień
+        }
+      }
+    }
   }
 </script>
+
+<!-- Ładowanie Fontu Poppins z Google Fonts -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
 
 <!-- Biblioteki React -->
 <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
@@ -21,14 +45,14 @@
 <style>
     /* Izolowany kontener dla kalkulatora */
     #tax-calculator-root {
-        font-family: 'Inter', system-ui, -apple-system, sans-serif;
+        font-family: 'Poppins', sans-serif; /* Zastosowanie nowego fontu */
         background-color: #f8fafc;
-        border-radius: 12px;
-        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
-        padding: 24px;
+        border-radius: 24px; /* Większe zaokrąglenie */
+        box-shadow: 0 10px 40px -10px rgba(0, 0, 0, 0.08); /* Nowoczesny, głęboki cień */
+        padding: 32px;
         margin: 20px 0;
         color: #1e293b;
-        line-height: 1.5;
+        line-height: 1.6;
     }
     
     /* Reset podstawowych elementów wewnątrz kalkulatora */
@@ -39,33 +63,46 @@
         border-color: #e2e8f0;
     }
 
-    /* Style formularzy */
+    /* Style formularzy - POPRAWIONE */
+    #tax-calculator-root input[type="text"],
     #tax-calculator-root input[type="number"], 
     #tax-calculator-root select {
         display: block;
         width: 100%;
-        padding: 0.5rem 0.75rem;
-        font-size: 0.875rem;
-        line-height: 1.25rem;
-        border-radius: 0.5rem;
-        border-width: 1px;
-        border-color: #cbd5e1;
-        background-color: #fff;
-        margin-top: 0.25rem;
+        padding: 0.75rem 1rem;
+        font-size: 0.95rem;
+        font-family: 'Poppins', sans-serif;
+        line-height: 1.5;
+        border-radius: 0.75rem; /* Bardziej zaokrąglone inputy */
+        border: 1px solid #e2e8f0;
+        background-color: #ffffff;
+        margin-top: 0.35rem;
         color: #0f172a;
+        box-shadow: 0 2px 5px rgba(0,0,0,0.02);
+        transition: all 0.2s ease;
+    }
+
+    /* Specyficzne paddingi dla inputów z walutą */
+    #tax-calculator-root .currency-input input {
+        padding-right: 2.5rem;
     }
     
     #tax-calculator-root input:focus, 
     #tax-calculator-root select:focus {
-        outline: 2px solid transparent;
-        outline-offset: 2px;
-        border-color: #3b82f6;
-        box-shadow: 0 0 0 2px #bfdbfe;
+        outline: none;
+        border-color: #6366f1; /* Zmiana na nowoczesny indygo */
+        box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.15);
     }
     
     #tax-calculator-root button:disabled {
         opacity: 0.5;
         cursor: not-allowed;
+    }
+
+    /* Klasa pomocnicza do liczb tabelarycznych */
+    .tw-tabular-nums {
+        font-variant-numeric: tabular-nums;
+        letter-spacing: -0.02em; /* Lekkie zwężenie dla cyfr */
     }
 </style>
 </head>
@@ -76,11 +113,13 @@
 
 <!-- Logika aplikacji -->
 <script type="text/babel">
-    const { useState, useMemo, useCallback } = React;
+    const { useState, useMemo, useCallback, useEffect } = React;
 
-    // --- 1. IKONY SVG (Wbudowane dla niezawodności) ---
+    // --- 1. ODŚWIEŻONE IKONY SVG (Lżejsze, bardziej obłe) ---
+    // Stroke width zmieniony na 1.5 lub 2 dla lżejszego wyglądu
+    
     const CalculatorIcon = ({ size = 24, className }) => (
-        <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><rect width="16" height="20" x="4" y="2" rx="2"/><line x1="8" x2="16" y1="6" y2="6"/><line x1="16" x2="16" y1="14" y2="18"/><line x1="8" x2="8" y1="14" y2="18"/><line x1="12" x2="12" y1="14" y2="18"/><line x1="8" x2="16" y1="10" y2="10"/></svg>
+        <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><rect width="16" height="20" x="4" y="2" rx="2" ry="2"/><line x1="8" x2="16" y1="6" y2="6"/><line x1="16" x2="16" y1="14" y2="18"/><line x1="8" x2="8" y1="14" y2="18"/><line x1="12" x2="12" y1="14" y2="18"/><line x1="8" x2="16" y1="10" y2="10"/></svg>
     );
     const DollarSignIcon = ({ size = 24, className }) => (
         <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><line x1="12" x2="12" y1="2" y2="22"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
@@ -93,6 +132,17 @@
     );
     const UsersIcon = ({ size = 24, className }) => (
         <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+    );
+    
+    // --- NOWE IKONY DO SZCZEGÓŁÓW WYNIKÓW ---
+    const HeartIcon = ({ size = 24, className }) => (
+        <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"/></svg>
+    );
+    const ShieldIcon = ({ size = 24, className }) => (
+        <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+    );
+    const TaxBadgeIcon = ({ size = 24, className }) => (
+        <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="12" x2="12" y1="18" y2="12"/><line x1="9" x2="15" y1="15" y2="15"/></svg>
     );
 
     // --- 2. STAŁE PODATKOWE (ZAKTUALIZOWANE NA ROK 2025) ---
@@ -116,17 +166,60 @@
         return Math.round(num).toString().replace(/\B(?=(\d{3})+(?!\d))/g, " ");
     };
 
+    // Komponent do animowania liczb
+    const AnimatedNumber = ({ value }) => {
+        const [displayValue, setDisplayValue] = useState(value);
+        
+        useEffect(() => {
+            let startTimestamp = null;
+            const startValue = displayValue;
+            const duration = 1000; 
+
+            const step = (timestamp) => {
+                if (!startTimestamp) startTimestamp = timestamp;
+                const progress = Math.min((timestamp - startTimestamp) / duration, 1);
+                const ease = 1 - Math.pow(1 - progress, 4);
+                
+                const current = startValue + (value - startValue) * ease;
+                setDisplayValue(current);
+                
+                if (progress < 1) {
+                    window.requestAnimationFrame(step);
+                }
+            };
+            
+            const frameId = window.requestAnimationFrame(step);
+            return () => window.cancelAnimationFrame(frameId);
+        }, [value]);
+
+        return <span className="tw-tabular-nums">{formatNumber(displayValue)}</span>;
+    };
+
+    const calculateChildRelief = (count) => {
+        if (!count || count <= 0) return 0;
+        let relief = 0;
+        if (count >= 1) relief += 1112.04;
+        if (count >= 2) relief += 1112.04;
+        if (count >= 3) relief += 2000.04;
+        if (count >= 4) relief += (count - 3) * 2700.00;
+        return relief;
+    };
+
     const calculateScaleTaxValue = (income) => {
         let tax = 0;
+        let taxAbove = 0; 
         const taxReductionAmount = 3600; 
+
         if (income <= TAX_FREE_AMOUNT) {
           tax = 0;
         } else if (income <= TAX_THRESHOLD) {
           tax = (income * 0.12) - taxReductionAmount;
         } else {
-          tax = (TAX_THRESHOLD * 0.12 - taxReductionAmount) + ((income - TAX_THRESHOLD) * 0.32);
+          const taxLevel1 = (TAX_THRESHOLD * 0.12) - taxReductionAmount;
+          taxAbove = (income - TAX_THRESHOLD) * 0.32;
+          tax = taxLevel1 + taxAbove;
         }
-        return Math.max(0, tax);
+        return { total: Math.max(0, tax), above: Math.max(0, taxAbove) };
     };
 
     const calculateTaxes = (
@@ -135,11 +228,13 @@
         ryczaltRate, 
         zusType, 
         isJointSettlement, 
-        spouseMonthlyIncome
+        spouseMonthlyIncome,
+        numberOfChildren
     ) => {
         const revenue = monthlyRevenue || 0;
         const costs = monthlyCosts || 0;
         const spouseIncome = spouseMonthlyIncome || 0;
+        const childrenCount = numberOfChildren || 0;
         
         const annualRevenue = revenue * 12;
         const annualCosts = costs * 12;
@@ -147,45 +242,64 @@
         const monthlySocialZus = MONTHLY_ZUS_RATES[zusType];
         const annualSocialZus = monthlySocialZus * 12;
         
+        const childRelief = calculateChildRelief(childrenCount);
+        
         const results = [];
 
         // 1. SKALA PODATKOWA
         const scaleIncome = Math.max(0, annualRevenue - annualCosts - annualSocialZus);
         const scaleHealth = scaleIncome * 0.09; 
         let scaleTax = 0;
+        let scaleTaxAbove = 0; 
         let scaleSolidarityTax = 0;
 
         if (isJointSettlement) {
           const annualSpouseIncome = spouseIncome * 12;
           const totalJointIncome = scaleIncome + annualSpouseIncome;
           const halfIncome = totalJointIncome / 2;
-          const totalJointTax = calculateScaleTaxValue(halfIncome) * 2;
-          const spouseSoloTax = calculateScaleTaxValue(annualSpouseIncome);
-          scaleTax = Math.max(0, totalJointTax - spouseSoloTax);
+          
+          const userTaxCalc = calculateScaleTaxValue(halfIncome);
+          const totalJointTax = userTaxCalc.total * 2;
+          const totalJointTaxAbove = userTaxCalc.above * 2;
+          
+          const spouseSoloCalc = calculateScaleTaxValue(annualSpouseIncome);
+          
+          scaleTax = Math.max(0, totalJointTax - spouseSoloCalc.total);
+          scaleTaxAbove = Math.max(0, totalJointTaxAbove - spouseSoloCalc.above); 
+
+          scaleTax = Math.max(0, scaleTax - childRelief);
+
           if (scaleIncome > SOLIDARITY_THRESHOLD) {
               scaleSolidarityTax = (scaleIncome - SOLIDARITY_THRESHOLD) * SOLIDARITY_RATE;
           }
         } else {
-          scaleTax = calculateScaleTaxValue(scaleIncome);
+          const taxCalc = calculateScaleTaxValue(scaleIncome);
+          scaleTax = taxCalc.total;
+          scaleTaxAbove = taxCalc.above;
+          
+          scaleTax = Math.max(0, scaleTax - childRelief);
+
           if (scaleIncome > SOLIDARITY_THRESHOLD) {
               scaleSolidarityTax = (scaleIncome - SOLIDARITY_THRESHOLD) * SOLIDARITY_RATE;
           }
         }
-        scaleTax += scaleSolidarityTax;
-        const scaleNet = annualRevenue - annualCosts - annualSocialZus - scaleHealth - scaleTax;
+        
+        const finalScaleTax = scaleTax + scaleSolidarityTax;
+        const scaleNet = annualRevenue - annualCosts - annualSocialZus - scaleHealth - finalScaleTax;
 
         results.push({ 
             id: 'skala', 
-            name: isJointSettlement ? 'Skala (Wspólne)' : 'Skala Podatkowa', 
+            name: isJointSettlement ? 'Skala podatkowa (Wspólne)' : 'Skala podatkowa', 
             net: scaleNet, 
-            tax: scaleTax, 
+            tax: finalScaleTax, 
+            taxAbove: scaleTaxAbove, 
             solidarity: scaleSolidarityTax,
             health: scaleHealth,
             monthlyNet: scaleNet / 12,
-            monthlyTax: scaleTax / 12,
+            monthlyTax: finalScaleTax / 12,
             monthlyHealth: scaleHealth / 12,
             monthlySocialZus: monthlySocialZus,
-            details: isJointSettlement ? 'Uwzględniono dochód małżonka.' : 'Opłacalne przy niższych dochodach.' 
+            details: (isJointSettlement ? 'Z małżonkiem' : 'Zasady ogólne') + (childrenCount > 0 ? `, Dzieci: ${childrenCount}` : '') 
         });
 
         // 2. PODATEK LINIOWY
@@ -247,315 +361,398 @@
 
     // --- 4. GŁÓWNY KOMPONENT ---
     function TaxCalculator() {
-      const [monthlyRevenue, setMonthlyRevenue] = useState(null); 
-      const [monthlyCosts, setMonthlyCosts] = useState(null);
+      // Wartości domyślne: Przychód 10000, Koszty 0
+      const [monthlyRevenue, setMonthlyRevenue] = useState(10000); 
+      const [monthlyCosts, setMonthlyCosts] = useState(0);
       const [ryczaltRate, setRyczaltRate] = useState(12);
       const [zusType, setZusType] = useState('duzy');
       const [isJointSettlement, setIsJointSettlement] = useState(false);
       const [spouseMonthlyIncome, setSpouseMonthlyIncome] = useState(null);
+      const [numberOfChildren, setNumberOfChildren] = useState(0); // Domyślnie 0 dzieci
 
-      const hasInput = useMemo(() => monthlyRevenue !== null && monthlyRevenue > 0, [monthlyRevenue]);
-      const results = useMemo(() => {
-        if (!hasInput) return [];
+      // Obliczanie wartości miesięcznych do logiki kalkulatora
+      // Jeśli input jest roczny, dzielimy przez 12. Jeśli miesięczny, bierzemy wprost.
+      const [inputMode, setInputMode] = useState('monthly'); // 'monthly' | 'yearly'
+      
+      const monthlyRevenueCalc = useMemo(() => {
+          if (monthlyRevenue === null) return 0;
+          return inputMode === 'monthly' ? monthlyRevenue : monthlyRevenue / 12;
+      }, [monthlyRevenue, inputMode]);
+
+      const monthlyCostsCalc = useMemo(() => {
+          if (monthlyCosts === null) return 0;
+          return inputMode === 'monthly' ? monthlyCosts : monthlyCosts / 12;
+      }, [monthlyCosts, inputMode]);
+
+      const hasInputCalc = useMemo(() => monthlyRevenueCalc !== null && monthlyRevenueCalc >= 0, [monthlyRevenueCalc]);
+      
+      const resultsCalc = useMemo(() => {
+        if (!hasInputCalc) return [];
         return calculateTaxes(
-            monthlyRevenue, 
-            monthlyCosts, 
+            monthlyRevenueCalc, 
+            monthlyCostsCalc, 
             ryczaltRate, 
             zusType, 
             isJointSettlement, 
-            spouseMonthlyIncome
+            spouseMonthlyIncome,
+            numberOfChildren
         );
-      }, [monthlyRevenue, monthlyCosts, ryczaltRate, zusType, isJointSettlement, spouseMonthlyIncome]);
+      }, [monthlyRevenueCalc, monthlyCostsCalc, ryczaltRate, zusType, isJointSettlement, spouseMonthlyIncome, numberOfChildren]);
       
-      const bestOption = results[0] || {};
-      const totalAnnualRevenue = (monthlyRevenue || 0) * 12;
-      const totalAnnualCosts = (monthlyCosts || 0) * 12;
+      const bestOptionCalc = resultsCalc[0] || {};
+      const totalAnnualRevenueCalc = monthlyRevenueCalc * 12;
+      const totalAnnualCostsCalc = monthlyCostsCalc * 12;
+      const totalAnnualIncomeCalc = totalAnnualRevenueCalc - totalAnnualCostsCalc;
 
-      const handleInputChange = (e, setter) => {
-        const value = e.target.value;
-        setter(value === '' ? null : Number(value));
+      const handleModeChange = (newMode) => {
+          if (newMode === inputMode) return;
+          
+          if (monthlyRevenue !== null) {
+              setMonthlyRevenue(newMode === 'yearly' ? monthlyRevenue * 12 : monthlyRevenue / 12);
+          }
+          if (monthlyCosts !== null) {
+              setMonthlyCosts(newMode === 'yearly' ? monthlyCosts * 12 : monthlyCosts / 12);
+          }
+          setInputMode(newMode);
+      };
+
+      const formatCurrencyInput = (val) => {
+          if (val === null || val === undefined) return '';
+          return Math.round(val).toString().replace(/\B(?=(\d{3})+(?!\d))/g, " ");
+      };
+
+      const handleCurrencyChange = (e, setter) => {
+        const value = e.target.value.replace(/\s/g, ''); 
+        if (value === '') {
+            setter(null);
+        } else if (!isNaN(value)) {
+            setter(Number(value));
+        }
       };
 
       return (
         <div className="tw-min-h-screen tw-bg-slate-50 tw-p-4 md:tw-p-8">
-          <div className="tw-max-w-5xl tw-mx-auto">
+          <div className="tw-max-w-6xl tw-mx-auto">
             
             {/* Header */}
-            <header className="tw-mb-8 tw-text-center md:tw-text-left tw-flex tw-items-center tw-gap-3">
-              <div className="tw-bg-blue-600 tw-p-3 tw-rounded-lg tw-shadow-lg tw-text-white">
+            <header className="tw-mb-8 tw-text-center md:tw-text-left tw-flex tw-items-center tw-gap-4">
+              <div className="tw-bg-gradient-to-br tw-from-blue-500 tw-to-blue-700 tw-p-3 tw-rounded-xl tw-shadow-lg tw-text-white">
                 <CalculatorIcon size={32} />
               </div>
               <div>
-                <h1 className="tw-text-3xl tw-font-bold tw-text-slate-900 tw-m-0">Kalkulator wyboru form opodatkowania</h1>
-                <p className="tw-text-slate-500 tw-m-0">Porównaj formy opodatkowania (Stawki 2025)</p>
+                <h1 className="tw-text-3xl tw-font-extrabold tw-text-slate-900 tw-m-0 tw-tracking-tight">Kalkulator wyboru form opodatkowania</h1>
+                <p className="tw-text-slate-500 tw-m-0 tw-font-medium">Porównaj formy opodatkowania (Stawki 2025)</p>
               </div>
             </header>
 
-            <div className="tw-grid tw-grid-cols-1 lg:tw-grid-cols-3 tw-gap-8">
+            <div className="tw-grid tw-grid-cols-1 lg:tw-grid-cols-12 tw-gap-8">
               
-              {/* Lewa kolumna - Konfiguracja */}
-              <div className="lg:tw-col-span-1 tw-space-y-6">
+              {/* LEWA KOLUMNA: PANELE KONFIGURACJI */}
+              <div className="lg:tw-col-span-4 tw-space-y-6">
                 
-                {/* Panel Parametry */}
-                <div className="tw-bg-white tw-p-6 tw-rounded-xl tw-shadow-sm tw-border tw-border-slate-200">
-                  <h2 className="tw-text-lg tw-font-semibold tw-mb-4 tw-flex tw-items-center tw-gap-2">
-                    <DollarSignIcon className="tw-text-blue-600" size={20} />
-                    Parametry Miesięczne
-                  </h2>
-                  <div className="tw-space-y-4">
+                {/* Panel 1: Parametry */}
+                <div className="tw-bg-white tw-p-6 tw-rounded-2xl tw-shadow-modern tw-border tw-border-slate-100 tw-transition-all hover:tw-shadow-modern-lg">
+                  <div className="tw-flex tw-justify-between tw-items-center tw-mb-4">
+                      <h2 className="tw-text-base tw-font-bold tw-flex tw-items-center tw-gap-3 tw-text-slate-800 tw-m-0">
+                        <div className="tw-p-2 tw-rounded-xl tw-bg-blue-100 tw-text-blue-600 tw-shadow-sm">
+                           <DollarSignIcon size={20} />
+                        </div>
+                        Parametry Finansowe
+                      </h2>
+                  </div>
+                  
+                  <div className="segmented-control tw-mb-5">
+                      <div className="segmented-control-indicator" style={{ transform: inputMode === 'monthly' ? 'translateX(0)' : 'translateX(100%)' }}></div>
+                      <button onClick={() => handleModeChange('monthly')} className={inputMode === 'monthly' ? 'active' : ''}>Miesięcznie</button>
+                      <button onClick={() => handleModeChange('yearly')} className={inputMode === 'yearly' ? 'active' : ''}>Rocznie</button>
+                  </div>
+
+                  <div className="tw-grid tw-grid-cols-2 tw-gap-4">
                     <div>
-                      <label className="tw-block tw-text-sm tw-font-medium tw-text-slate-700 tw-mb-1">Przychód netto (bez VAT)</label>
-                      <input type="number" value={monthlyRevenue === null ? '' : monthlyRevenue} onChange={(e) => handleInputChange(e, setMonthlyRevenue)} placeholder="np. 15000" className="" />
+                      <label className="tw-block tw-text-[11px] tw-font-bold tw-text-slate-500 tw-uppercase tw-tracking-wider tw-mb-1.5">Przychód</label>
+                      <div className="tw-relative currency-input">
+                        <input type="text" inputMode="numeric" value={formatCurrencyInput(monthlyRevenue)} onChange={(e) => handleCurrencyChange(e, setMonthlyRevenue)} placeholder="0" className="tw-w-full tw-pr-10 tw-font-semibold tw-text-slate-700" />
+                        <span className="tw-absolute tw-right-3 tw-top-1/2 tw-transform tw--translate-y-1/2 tw-text-slate-400 tw-text-xs tw-font-medium">zł</span>
+                      </div>
                     </div>
                     <div>
-                      <label className="tw-block tw-text-sm tw-font-medium tw-text-slate-700 tw-mb-1">Koszty firmowe netto</label>
-                      <input type="number" value={monthlyCosts === null ? '' : monthlyCosts} onChange={(e) => handleInputChange(e, setMonthlyCosts)} placeholder="np. 2000" className="" />
+                      <label className="tw-block tw-text-[11px] tw-font-bold tw-text-slate-500 tw-uppercase tw-tracking-wider tw-mb-1.5">Koszty</label>
+                      <div className="tw-relative currency-input">
+                        <input type="text" inputMode="numeric" value={formatCurrencyInput(monthlyCosts)} onChange={(e) => handleCurrencyChange(e, setMonthlyCosts)} placeholder="0" className="tw-w-full tw-pr-10 tw-font-semibold tw-text-slate-700" />
+                        <span className="tw-absolute tw-right-3 tw-top-1/2 tw-transform tw--translate-y-1/2 tw-text-slate-400 tw-text-xs tw-font-medium">zł</span>
+                      </div>
                     </div>
                   </div>
                 </div>
 
-                {/* Panel Ustawienia */}
-                <div className="tw-bg-white tw-p-6 tw-rounded-xl tw-shadow-sm tw-border tw-border-slate-200">
-                  <h2 className="tw-text-lg tw-font-semibold tw-mb-4 tw-flex tw-items-center tw-gap-2">
-                    <SettingsIcon className="tw-text-purple-600" size={20} />
-                    Ustawienia ZUS i Ryczałtu
+                {/* Panel 2: Ustawienia */}
+                <div className="tw-bg-white tw-p-6 tw-rounded-2xl tw-shadow-modern tw-border tw-border-slate-100 tw-transition-all hover:tw-shadow-modern-lg">
+                  <h2 className="tw-text-base tw-font-bold tw-mb-4 tw-flex tw-items-center tw-gap-3 tw-text-slate-800">
+                    <div className="tw-p-2 tw-rounded-xl tw-bg-purple-100 tw-text-purple-600 tw-shadow-sm">
+                        <SettingsIcon size={20} />
+                    </div>
+                    Ustawienia Podatkowe
                   </h2>
                   <div className="tw-space-y-4">
                     <div>
-                      <label className="tw-block tw-text-sm tw-font-medium tw-text-slate-700 tw-mb-1">Rodzaj ZUS (Społeczna)</label>
-                      <select value={zusType} onChange={(e) => setZusType(e.target.value)}>
-                        <option value="duzy">Pełna społeczna ZUS + FP (Standard 2025)</option>
-                        <option value="ulga">Ulga na start (Społeczna: 0 zł, max 6 mies.)</option>
-                        <option value="preferencyjny">ZUS Preferencyjny / Mały ZUS (max 24 mies.)</option>
-                        <option value="maly_plus">Mały ZUS Plus (max 36 mies.)</option>
+                      <label className="tw-block tw-text-[11px] tw-font-bold tw-text-slate-500 tw-uppercase tw-tracking-wider tw-mb-1.5">Rodzaj ZUS</label>
+                      <select value={zusType} onChange={(e) => setZusType(e.target.value)} className="tw-font-medium tw-text-slate-700">
+                        <option value="duzy">Pełny ZUS + FP (Standard 2025)</option>
+                        <option value="ulga">Ulga na start (0 zł, 6 mies.)</option>
+                        <option value="preferencyjny">ZUS Preferencyjny (24 mies.)</option>
+                        <option value="maly_plus">Mały ZUS Plus (36 mies.)</option>
                       </select>
-                       <p className="tw-text-xs tw-text-slate-500 tw-mt-2">Składka zdrowotna ZUS jest doliczana automatycznie.</p>
+                       <p className="tw-text-[10px] tw-text-slate-400 tw-mt-1.5 tw-font-medium">Składka zdrowotna ZUS jest doliczana automatycznie.</p>
                     </div>
                     <div>
-                      <label className="tw-block tw-text-sm tw-font-medium tw-text-slate-700 tw-mb-1">Stawka Ryczałtu</label>
-                      <select value={ryczaltRate} onChange={(e) => setRyczaltRate(Number(e.target.value))}>
-                        <option value={17}>17% - Wolne zawody (np. tłumacze, adwokaci)</option>
-                        <option value={15}>15% - Doradztwo, Prawo, Księgowość, Inżynieria (PKD 69, 70.22, 71.12)</option>
-                        <option value={14}>14% - Inżynieria, Architektura, Zdrowie (PKD 71.11, 86)</option>
-                        <option value={12}>12% - IT: Programiści, Hardware (PKD 62.01.1, 62.02)</option>
-                        <option value={10}>10% - Handel nieruchomościami na wł. rachunek (PKD 68.10)</option>
-                        <option value={8.5}>8.5% - Usługi (edukacja, fryzjer), Gastronomia z alkoholem, Najem</option>
-                        <option value={5.5}>5.5% - Budowlanka, Przewozy &gt;2t, Wytwórczość (PKD 41-43)</option>
-                        <option value={3}>3.0% - Handel (sprzedaż towarów), Gastronomia (bez alkoholu)</option>
-                        <option value={2}>2.0% - Produkty rolne</option>
+                      <label className="tw-block tw-text-[11px] tw-font-bold tw-text-slate-500 tw-uppercase tw-tracking-wider tw-mb-1.5">Stawka Ryczałtu</label>
+                      <select value={ryczaltRate} onChange={(e) => setRyczaltRate(Number(e.target.value))} className="tw-font-medium tw-text-slate-700">
+                        <option value={17}>17% - Wolne zawody</option>
+                        <option value={15}>15% - IT, Doradztwo</option>
+                        <option value={14}>14% - Inżynieria, Zdrowie</option>
+                        <option value={12}>12% - IT: Programiści</option>
+                        <option value={8.5}>8.5% - Usługi, Najem</option>
+                        <option value={5.5}>5.5% - Budowlanka</option>
+                        <option value={3}>3.0% - Handel</option>
                       </select>
                     </div>
                   </div>
                 </div>
 
-                {/* Panel Małżonek */}
-                <div className="tw-bg-white tw-p-6 tw-rounded-xl tw-shadow-sm tw-border tw-border-slate-200">
-                   <h2 className="tw-text-lg tw-font-semibold tw-mb-4 tw-flex tw-items-center tw-gap-2">
-                    <UsersIcon className="tw-text-emerald-600" size={20} />
-                    Rozliczenie z Małżonkiem
+                {/* Panel 3: Rodzina */}
+                <div className="tw-bg-white tw-p-6 tw-rounded-2xl tw-shadow-modern tw-border tw-border-slate-100 tw-transition-all hover:tw-shadow-modern-lg">
+                   <h2 className="tw-text-base tw-font-bold tw-mb-4 tw-flex tw-items-center tw-gap-3 tw-text-slate-800">
+                    <div className="tw-p-2 tw-rounded-xl tw-bg-emerald-100 tw-text-emerald-600 tw-shadow-sm">
+                        <UsersIcon size={20} />
+                    </div>
+                    Rodzina
                   </h2>
-                  <div className="tw-flex tw-items-center tw-gap-3 tw-mb-4">
-                    <div onClick={() => setIsJointSettlement(!isJointSettlement)} className={`tw-w-12 tw-h-6 tw-rounded-full tw-p-1 tw-cursor-pointer tw-transition-colors tw-duration-300 ${isJointSettlement ? 'tw-bg-emerald-500' : 'tw-bg-slate-300'}`}>
-                      <div className={`tw-w-4 tw-h-4 tw-rounded-full tw-bg-white tw-shadow-sm tw-transform tw-transition-transform tw-duration-300 ${isJointSettlement ? 'tw-translate-x-6' : 'tw-translate-x-0'}`} />
-                    </div>
-                    <span className="tw-text-sm tw-font-medium tw-text-slate-700">Wspólne rozliczenie</span>
+                  
+                  <div className={`tw-grid tw-gap-4 tw-items-end ${isJointSettlement ? 'tw-grid-cols-1' : 'tw-grid-cols-2'}`}>
+                      <div className="tw-flex tw-items-center tw-justify-between tw-bg-slate-50 tw-p-3 tw-rounded-xl tw-border tw-border-slate-200">
+                          <span className="tw-text-sm tw-font-semibold tw-text-slate-700">Wspólne rozliczenie</span>
+                          <div onClick={() => setIsJointSettlement(!isJointSettlement)} className={`tw-w-11 tw-h-6 tw-rounded-full tw-p-0.5 tw-cursor-pointer tw-transition-colors tw-duration-300 ${isJointSettlement ? 'tw-bg-emerald-500' : 'tw-bg-slate-300'}`}>
+                            <div className={`tw-w-5 tw-h-5 tw-rounded-full tw-bg-white tw-shadow-sm tw-transform tw-transition-transform tw-duration-300 ${isJointSettlement ? 'tw-translate-x-5' : 'tw-translate-x-0'}`} />
+                          </div>
+                      </div>
+
+                      <div className={isJointSettlement ? 'tw-grid tw-grid-cols-2 tw-gap-4' : ''}>
+                          {isJointSettlement && (
+                            <div className="tw-animate-in tw-slide-in-from-left-2 tw-duration-200">
+                              <label className="tw-block tw-text-[11px] tw-font-bold tw-text-slate-500 tw-uppercase tw-tracking-wider tw-mb-1.5">Dochód małżonka</label>
+                              <div className="tw-relative currency-input">
+                                  <input type="text" inputMode="numeric" value={formatCurrencyInput(spouseMonthlyIncome)} onChange={(e) => handleCurrencyChange(e, setSpouseMonthlyIncome)} placeholder="0" className="tw-w-full tw-pr-10 tw-font-semibold tw-text-slate-700" />
+                                  <span className="tw-absolute tw-right-3 tw-top-1/2 tw-transform tw--translate-y-1/2 tw-text-slate-400 tw-text-xs tw-font-medium">zł</span>
+                              </div>
+                            </div>
+                          )}
+
+                          <div>
+                            <label className="tw-block tw-text-[11px] tw-font-bold tw-text-slate-500 tw-uppercase tw-tracking-wider tw-mb-1.5">Liczba dzieci</label>
+                            <select value={numberOfChildren} onChange={(e) => setNumberOfChildren(Number(e.target.value))} className="tw-w-full tw-font-medium tw-text-slate-700">
+                                {[0, 1, 2, 3, 4, 5, 6, 7, 8, 9].map(num => (<option key={num} value={num}>{num}</option>))}
+                            </select>
+                          </div>
+                      </div>
                   </div>
-                  {isJointSettlement && (
-                    <div className="tw-animate-in tw-slide-in-from-top-2 tw-duration-200">
-                      <label className="tw-block tw-text-sm tw-font-medium tw-text-slate-700 tw-mb-1">Dochód miesięczny małżonka</label>
-                      <input type="number" value={spouseMonthlyIncome === null ? '' : spouseMonthlyIncome} onChange={(e) => handleInputChange(e, setSpouseMonthlyIncome)} placeholder="np. 5000" />
-                      <p className="tw-text-xs tw-text-slate-500 tw-mt-2">Dotyczy tylko Skali Podatkowej.</p>
-                    </div>
+                  {(isJointSettlement || numberOfChildren > 0) && (
+                      <p className="tw-text-[10px] tw-text-slate-400 tw-mt-3 tw-italic tw-font-medium">Ulgi te dotyczą tylko Skali Podatkowej.</p>
                   )}
                 </div>
               </div>
 
-              {/* Prawa kolumna - Wyniki */}
-              <div className="lg:tw-col-span-2 tw-space-y-6">
-                 {hasInput && results.length > 0 ? (
-                    <div className="tw-bg-gradient-to-r tw-from-emerald-500 tw-to-teal-600 tw-rounded-xl tw-p-6 tw-text-white tw-shadow-lg tw-relative tw-overflow-hidden">
-                      <div className="tw-relative tw-z-10">
-                        <div className="tw-flex tw-items-center tw-gap-2 tw-mb-2 tw-opacity-90">
-                          <TrendingUpIcon size={20} />
-                          <span className="tw-font-medium tw-tracking-wide tw-text-sm tw-uppercase">Najbardziej opłacalna opcja</span>
-                        </div>
-                        <h3 className="tw-text-3xl md:tw-text-4xl tw-font-bold tw-mb-1">{bestOption.name}</h3>
-                        <div className="tw-flex tw-items-baseline tw-gap-2 tw-mt-4">
-                          <span className="tw-text-4xl md:tw-text-5xl tw-font-bold">{formatNumber(bestOption.monthlyNet)} zł</span>
-                          <span className="tw-opacity-80">/ miesięcznie "na rękę"</span>
-                        </div>
-                        <div className="tw-mt-2 tw-text-sm tw-opacity-80">Rocznie na rękę: {formatNumber(bestOption.net)} zł</div>
-                      </div>
-                      <div className="tw-absolute tw-right-0 tw-bottom-0 tw-opacity-10 tw-transform tw-translate-x-1/4 tw-translate-y-1/4"><DollarSignIcon size={300} /></div>
-                    </div>
-                 ) : (
-                    <div className="tw-bg-white tw-p-6 tw-rounded-xl tw-shadow-lg tw-border tw-border-slate-200 tw-text-center tw-text-slate-500 tw-flex tw-flex-col tw-items-center tw-justify-center tw-min-h-[180px]">
-                        <CalculatorIcon size={48} className="tw-mb-3 tw-text-blue-400" />
-                        <p className="tw-font-medium">Wprowadź przychód (większy niż 0) i koszty, aby zobaczyć wyniki.</p>
+              {/* PRAWA KOLUMNA: WYNIKI */}
+              <div className="lg:tw-col-span-8 tw-space-y-6">
+                 
+                 {!hasInputCalc && (
+                    <div className="tw-bg-white tw-p-12 tw-rounded-2xl tw-shadow-lg tw-border tw-border-slate-100 tw-text-center tw-text-slate-500 tw-flex tw-flex-col tw-items-center tw-justify-center tw-h-full">
+                        <CalculatorIcon size={64} className="tw-mb-4 tw-text-blue-300" />
+                        <h3 className="tw-text-xl tw-font-semibold tw-text-slate-700 tw-mb-2">Wprowadź dane</h3>
+                        <p className="tw-font-medium">Wpisz przychód i koszty w panelu po lewej stronie, aby zobaczyć porównanie.</p>
                     </div>
                  )}
 
-                 {/* Lista Wyników */}
-                 <div className="tw-grid tw-gap-4">
-                    {results.map((result, index) => {
+                 {hasInputCalc && (
+                 <div className="tw-grid tw-grid-cols-1 md:tw-grid-cols-3 tw-gap-4">
+                    {resultsCalc.map((result, index) => {
                       const isBest = index === 0;
                       const incomeTaxOnly = result.tax - result.solidarity;
                       
                       const totalPublicBurden = incomeTaxOnly + result.health + (result.monthlySocialZus * 12) + result.solidarity;
-                      const effectiveTaxRate = totalAnnualRevenue > 0 ? (totalPublicBurden / totalAnnualRevenue) * 100 : 0;
+                      const effectiveTaxRate = totalAnnualRevenueCalc > 0 ? (totalPublicBurden / totalAnnualRevenueCalc) * 100 : 0;
+                      
+                      const diff = bestOptionCalc.net - result.net;
 
                       return (
-                        <div key={result.id} className={`tw-relative tw-bg-white tw-p-5 tw-rounded-xl tw-border-2 tw-transition-all ${isBest ? 'tw-border-emerald-500 tw-shadow-md' : 'tw-border-transparent tw-shadow-sm tw-hover:tw-border-slate-200'}`}>
-                          {isBest && <div className="tw-absolute tw-top-0 tw-right-0 tw-bg-emerald-500 tw-text-white tw-text-xs tw-px-3 tw-py-1 tw-rounded-bl-lg tw-rounded-tr-lg tw-font-bold">ZWYCIĘZCA</div>}
-                          <div className="tw-flex tw-flex-col md:tw-flex-row tw-justify-between md:tw-items-center tw-gap-4">
-                            <div className="tw-flex-1">
-                              <h4 className="tw-font-bold tw-text-lg tw-text-slate-800 tw-flex tw-items-center tw-gap-2">
-                                {result.name}
-                                {result.id === 'skala' && isJointSettlement && <span className="tw-bg-emerald-100 tw-text-emerald-700 tw-text-xs tw-px-2 tw-py-0.5 tw-rounded-full tw-font-normal">z małżonkiem</span>}
-                              </h4>
-                              <p className="tw-text-sm tw-text-slate-500 tw-mt-1">{result.details}</p>
-                              <div className="tw-mt-3 tw-flex tw-flex-wrap tw-gap-x-6 tw-gap-y-1 tw-text-xs tw-text-slate-500">
-                                 <span>Śr. podatek: <b className="tw-text-slate-700">{formatNumber(incomeTaxOnly / 12)} zł</b></span>
-                                 <span>Śr. zdrowotna: <b className="tw-text-slate-700">{formatNumber(result.monthlyHealth)} zł</b></span>
-                                 <span>ZUS społ.: <b className="tw-text-slate-700">{formatNumber(result.monthlySocialZus)} zł</b></span>
+                        <div key={result.id} className={`tw-flex tw-flex-col tw-bg-white tw-rounded-2xl tw-border-2 tw-transition-all tw-duration-300 tw-relative tw-overflow-hidden ${isBest ? 'tw-border-emerald-500 tw-shadow-xl tw-scale-[1.02] tw-z-10' : 'tw-border-slate-100 tw-shadow-sm hover:tw-border-slate-300'}`}>
+                          
+                          {/* KAFELEK HEADER */}
+                          <div className={`tw-p-4 ${isBest ? 'tw-bg-emerald-50' : 'tw-bg-white'} tw-border-b tw-border-slate-100`}>
+                              <div className="tw-flex tw-justify-between tw-items-start">
+                                  <h4 className={`tw-font-bold tw-text-base ${isBest ? 'tw-text-emerald-800' : 'tw-text-slate-800'}`}>
+                                    {result.name.replace(' (Wspólne)', '').replace('Podatkowa', '')}
+                                    {result.id === 'skala' && isJointSettlement && <span className="tw-block tw-text-[10px] tw-font-normal tw-text-emerald-700">Wspólne rozliczenie</span>}
+                                  </h4>
+                                  {isBest && <span className="tw-bg-emerald-500 tw-text-white tw-text-[10px] tw-uppercase tw-font-bold tw-px-2 tw-py-0.5 tw-rounded-full tw-shadow-sm">Najlepsza</span>}
                               </div>
-                              
-                              {/* --- PODSUMOWANIE ROCZNE (Pełne) --- */}
-                              <div className="tw-mt-4 tw-pt-3 tw-border-t tw-border-slate-100">
-                                  <p className="tw-text-xs tw-font-semibold tw-text-slate-500 tw-mb-2">Podsumowanie Roczne:</p>
-                                  <div className="tw-grid tw-grid-cols-2 sm:tw-grid-cols-3 tw-gap-y-2 tw-gap-x-4 tw-text-xs tw-text-slate-600">
-                                      <div>Przychody: <b className="tw-text-slate-800">{formatNumber(totalAnnualRevenue)} zł</b></div>
-                                      <div>Koszty: <b className="tw-text-slate-800">{formatNumber(totalAnnualCosts)} zł</b></div>
-                                      <div>Dochód Netto: <b className="tw-text-emerald-700">{formatNumber(result.net)} zł</b></div>
-                                      <div>Podatek (PIT): <b className="tw-text-slate-800">{formatNumber(incomeTaxOnly)} zł</b></div>
-                                      <div>Składka Zdrowotna: <b className="tw-text-slate-800">{formatNumber(result.health)} zł</b></div>
-                                      <div>Składki ZUS: <b className="tw-text-slate-800">{formatNumber(result.monthlySocialZus * 12)} zł</b></div>
-                                      
-                                      <div className="tw-col-span-2 sm:tw-col-span-3 tw-mt-1 tw-pt-1 tw-border-t tw-border-slate-100 tw-flex tw-justify-between tw-items-center">
-                                          <span>Efektywne opodatkowanie (obciążenie przychodu):</span>
-                                          <b className="tw-text-indigo-600 tw-text-sm">{effectiveTaxRate.toFixed(2)}%</b>
-                                      </div>
-                                      
-                                      {result.solidarity > 0 && <div className="tw-col-span-2 tw-text-red-600">Danina Solidarnościowa: <b>{formatNumber(result.solidarity)} zł</b></div>}
-                                  </div>
+                              <div className={`tw-mt-1 tw-text-[10px] tw-font-bold tw-px-2 tw-py-1 tw-rounded tw-border ${diff > 0 ? 'tw-text-red-600 tw-bg-red-50 tw-border-red-100' : 'tw-invisible tw-border-transparent'}`}>
+                                  {diff > 0 ? <>+ <AnimatedNumber value={diff} /> zł rocznie</> : '-'}
                               </div>
+                          </div>
 
-                            </div>
-                            <div className="tw-text-right tw-shrink-0">
-                              <div className="tw-text-xs tw-text-slate-400 tw-mb-1">Twoje "na rękę" (śr. mies.)</div>
-                              <div className={`tw-text-2xl tw-font-bold ${isBest ? 'tw-text-emerald-600' : 'tw-text-slate-700'}`}>{formatNumber(result.monthlyNet)} zł</div>
-                            </div>
+                          {/* GŁÓWNY WYNIK */}
+                          <div className="tw-p-5 tw-text-center">
+                              <div className="tw-text-[10px] tw-font-bold tw-text-slate-400 tw-uppercase tw-tracking-wider tw-mb-1">Na rękę (mies.)</div>
+                              <div className={`tw-text-3xl tw-font-extrabold ${isBest ? 'tw-text-emerald-600' : 'tw-text-slate-800'}`}>
+                                <AnimatedNumber value={result.monthlyNet} /> <span className="tw-text-base tw-font-medium">zł</span>
+                              </div>
+                              <div className="tw-text-xs tw-text-slate-400 tw-mt-1 tw-font-medium">
+                                Rocznie: <AnimatedNumber value={result.net} /> zł
+                              </div>
+                          </div>
+
+                          {/* SZCZEGÓŁY MIESIĘCZNE */}
+                          <div className="tw-px-5 tw-pb-4 tw-space-y-2 tw-text-xs">
+                             <div className="tw-flex tw-justify-between tw-border-b tw-border-slate-100 tw-pb-1">
+                               <span className="tw-text-slate-500 tw-flex tw-items-center tw-gap-1.5"><TaxBadgeIcon size={14} className="tw-text-red-400"/> Podatek (PIT)</span>
+                               <span className="tw-font-semibold tw-text-slate-700"><AnimatedNumber value={incomeTaxOnly / 12} /> zł</span>
+                             </div>
+                             <div className="tw-flex tw-justify-between tw-border-b tw-border-slate-100 tw-pb-1">
+                               <span className="tw-text-slate-500 tw-flex tw-items-center tw-gap-1.5"><HeartIcon size={14} className="tw-text-blue-400"/> Składka zdrowotna (NFZ)</span>
+                               <span className="tw-font-semibold tw-text-slate-700"><AnimatedNumber value={result.monthlyHealth} /> zł</span>
+                             </div>
+                             <div className="tw-flex tw-items-center tw-justify-between tw-border-b tw-border-slate-100 tw-pb-1">
+                               <span className="tw-text-slate-500 tw-flex tw-items-center tw-gap-1.5"><ShieldIcon size={14} className="tw-text-yellow-500"/> Społeczne ZUS</span>
+                               <span className="tw-font-semibold tw-text-slate-700"><AnimatedNumber value={result.monthlySocialZus} /> zł</span>
+                             </div>
                           </div>
                           
-                          {/* Pasek wizualny */}
-                          <div className="tw-mt-4 tw-h-2 tw-w-full tw-bg-slate-400 tw-rounded-full tw-overflow-hidden tw-flex">
-                             {totalAnnualRevenue > 0 && (
-                                <>
-                                  <div className="tw-bg-emerald-500" style={{ width: `${(result.net / totalAnnualRevenue) * 100}%` }} title={`Netto: ${formatNumber(result.net)} zł`}/>
-                                  <div className="tw-bg-red-400" style={{ width: `${(result.tax / totalAnnualRevenue) * 100}%` }} title={`Podatek: ${formatNumber(result.tax)} zł`}/>
-                                  <div className="tw-bg-blue-400" style={{ width: `${(result.health / totalAnnualRevenue) * 100}%` }} title={`Zdrowotna: ${formatNumber(result.health)} zł`}/>
-                                  <div className="tw-bg-yellow-500" style={{ width: `${(result.monthlySocialZus * 12 / totalAnnualRevenue) * 100}%` }} title={`Społeczny ZUS: ${formatNumber(result.monthlySocialZus * 12)} zł`}/>
-                                </>
-                             )}
-                          </div>
-                          {/* Uproszczona Legenda */}
-                          <div className="tw-mt-2 tw-flex tw-flex-wrap tw-gap-x-4 tw-gap-y-1 tw-text-[10px] sm:tw-text-xs tw-text-slate-500">
-                              <div className="tw-flex tw-items-center tw-gap-1">
-                                  <div className="tw-w-3 tw-h-3 tw-rounded-full tw-bg-emerald-500"></div>
-                                  <span>Zysk Netto</span>
-                              </div>
-                              <div className="tw-flex tw-items-center tw-gap-1">
-                                  <div className="tw-w-3 tw-h-3 tw-rounded-full tw-bg-red-400"></div>
-                                  <span>Podatek</span>
-                              </div>
-                              <div className="tw-flex tw-items-center tw-gap-1">
-                                  <div className="tw-w-3 tw-h-3 tw-rounded-full tw-bg-blue-400"></div>
-                                  <span>Zdrowotna</span>
-                              </div>
-                              <div className="tw-flex tw-items-center tw-gap-1">
-                                  <div className="tw-w-3 tw-h-3 tw-rounded-full tw-bg-yellow-500"></div>
-                                  <span>ZUS</span>
-                              </div>
-                              {(totalAnnualRevenue - (result.net + result.tax + result.health + result.monthlySocialZus * 12)) > 1 && (
-                                   <div className="tw-flex tw-items-center tw-gap-1">
-                                      <div className="tw-w-3 tw-h-3 tw-rounded-full tw-bg-slate-400"></div>
-                                      <span>Koszty</span>
+                          {/* PODSUMOWANIE ROCZNE */}
+                          <div className="tw-bg-slate-50 tw-p-4 tw-mt-auto tw-border-t tw-border-slate-100">
+                              <p className="tw-text-[10px] tw-uppercase tw-font-bold tw-text-slate-400 tw-mb-2">Podsumowanie roczne</p>
+                              <div className="tw-space-y-1 tw-text-[11px]">
+                                  <div className="tw-flex tw-justify-between">
+                                      <span className="tw-text-slate-500">Przychód:</span>
+                                      <span className="tw-text-slate-800"><AnimatedNumber value={totalAnnualRevenueCalc} /> zł</span>
                                   </div>
-                              )}
+                                  <div className="tw-flex tw-justify-between">
+                                      <span className="tw-text-slate-500">Koszty:</span>
+                                      <span className="tw-text-slate-800"><AnimatedNumber value={totalAnnualCostsCalc} /> zł</span>
+                                  </div>
+                                  <div className="tw-flex tw-justify-between">
+                                      <span className="tw-text-slate-500">Społeczne ZUS:</span>
+                                      <span className="tw-text-slate-800"><AnimatedNumber value={result.monthlySocialZus * 12} /> zł</span>
+                                  </div>
+                                  <div className="tw-flex tw-justify-between">
+                                      <span className="tw-text-slate-500">Składka zdrowotna (NFZ):</span>
+                                      <span className="tw-text-slate-800"><AnimatedNumber value={result.health} /> zł</span>
+                                  </div>
+                                  
+                                  <div className="tw-flex tw-justify-between tw-pt-1">
+                                      <span className="tw-text-slate-500">Podatek (PIT):</span>
+                                      <span className="tw-text-slate-800 tw-text-right">
+                                          <AnimatedNumber value={incomeTaxOnly} /> zł
+                                          {result.taxAbove > 0 && (
+                                              <span className="tw-block tw-text-[9px] tw-text-red-500">
+                                                w tym <AnimatedNumber value={result.taxAbove} /> zł (32%)
+                                              </span>
+                                          )}
+                                      </span>
+                                  </div>
+                                  {result.solidarity > 0 && (
+                                    <div className="tw-flex tw-justify-between tw-text-red-600">
+                                      <span>Danina solidarnościowa:</span>
+                                      <span><AnimatedNumber value={result.solidarity} /></span>
+                                    </div>
+                                  )}
+
+                                  <div className="tw-border-t tw-border-slate-200 tw-mt-2 tw-pt-2"></div>
+                                  <div className="tw-flex tw-justify-between tw-items-baseline">
+                                      <span className="tw-text-slate-600 tw-font-semibold">Dochód roczny (na rękę):</span>
+                                      <span className="tw-text-emerald-700 tw-font-bold tw-text-sm tw-whitespace-nowrap"><AnimatedNumber value={result.net} /> zł</span>
+                                  </div>
+
+                                  <div className="tw-flex tw-justify-between tw-pt-2 tw-mt-1 tw-border-t tw-border-slate-200">
+                                      <span className="tw-text-slate-500">Efektywne opodatkowanie:</span>
+                                      <span className="tw-font-bold tw-text-indigo-600"><AnimatedNumber value={effectiveTaxRate} />%</span>
+                                  </div>
+                              </div>
+                          </div>
+
+                          {/* Pasek wizualny */}
+                          <div className="tw-h-1.5 tw-w-full tw-flex">
+                             <div className="tw-bg-emerald-500" style={{ width: `${(result.net / totalAnnualRevenueCalc) * 100}%` }}></div>
+                             <div className="tw-bg-red-400" style={{ width: `${(result.tax / totalAnnualRevenueCalc) * 100}%` }}></div>
+                             <div className="tw-bg-blue-400" style={{ width: `${(result.health / totalAnnualRevenueCalc) * 100}%` }}></div>
+                             <div className="tw-bg-yellow-500" style={{ width: `${(result.monthlySocialZus * 12 / totalAnnualRevenueCalc) * 100}%` }}></div>
                           </div>
                         </div>
                       );
                     })}
                  </div>
+                 )}
 
-                 {/* Sekcja Wykresu Porównawczego Obciążeń (Nowa) */}
-                 {hasInput && results.length > 0 && (
-                    <div className="tw-bg-white tw-p-6 tw-rounded-xl tw-shadow-lg tw-border tw-border-slate-200 tw-mt-6">
-                        <h2 className="tw-text-lg tw-font-semibold tw-mb-8 tw-text-slate-800">Porównanie Rocznych Obciążeń (Podatki + ZUS)</h2>
-                        <div className="tw-flex tw-items-end tw-justify-around tw-h-64 tw-gap-4 md:tw-gap-8 tw-pb-2">
+                 {/* Wykres Porównawczy */}
+                 {hasInputCalc && resultsCalc.length > 0 && (
+                    <div className="tw-bg-white tw-p-6 tw-rounded-2xl tw-shadow-lg tw-border tw-border-slate-100 tw-mt-8">
+                        <h2 className="tw-text-lg tw-font-bold tw-mb-8 tw-text-slate-800">Porównanie Rocznych Obciążeń (Podatki + ZUS)</h2>
+                        <div className="tw-flex tw-items-end tw-justify-around tw-h-56 tw-gap-4 md:tw-gap-8 tw-pb-2">
                              {(() => {
-                                 const maxLoad = Math.max(...results.map(r => r.tax + r.health + (r.monthlySocialZus * 12)));
+                                 const maxLoad = Math.max(...resultsCalc.map(r => r.tax + r.health + (r.monthlySocialZus * 12)));
                                  const scale = maxLoad > 0 ? maxLoad : 1;
 
-                                 return results.map(r => {
+                                 return resultsCalc.map(r => {
                                      const annualZus = r.monthlySocialZus * 12;
                                      const annualHealth = r.health;
                                      const annualTax = r.tax;
                                      const totalLoad = annualZus + annualHealth + annualTax;
                                      const totalHeightPct = (totalLoad / scale) * 100;
                                      
-                                     // Wysokości procentowe słupków (relative to scale)
                                      const hZus = (annualZus / scale) * 100;
                                      const hHealth = (annualHealth / scale) * 100;
                                      const hTax = (annualTax / scale) * 100;
                                      
-                                     const isBest = r === results[0];
+                                     const isBest = r === resultsCalc[0];
 
                                      return (
                                         <div key={r.id} className="tw-flex tw-flex-col tw-items-center tw-w-full tw-max-w-[120px] tw-group">
-                                            {/* Słupek obciążeń - kontener */}
-                                            <div className="tw-w-full tw-flex tw-flex-col-reverse tw-relative tw-rounded-t-md tw-overflow-visible tw-shadow-sm tw-transition-all tw-duration-300 group-hover:tw-shadow-md" style={{ height: '200px' }}>
-                                                {/* Etykieta sumy nad słupkiem (pozycjonowana dynamicznie) */}
+                                            <div className="tw-w-full tw-flex tw-flex-col-reverse tw-relative tw-rounded-t-lg tw-overflow-visible tw-shadow-sm tw-transition-all tw-duration-300 group-hover:tw-shadow-md" style={{ height: '200px' }}>
                                                 <div 
-                                                    className="tw-absolute tw-left-1/2 tw-transform tw--translate-x-1/2 tw-mb-2 tw-text-xs tw-font-bold tw-text-slate-700 tw-whitespace-nowrap"
+                                                    className="tw-absolute tw-left-1/2 tw-transform tw--translate-x-1/2 tw-mb-2 tw-text-[10px] tw-font-bold tw-text-slate-600 tw-bg-white tw-px-1.5 tw-py-0.5 tw-rounded tw-shadow-sm tw-whitespace-nowrap tw-z-10"
                                                     style={{ bottom: `${totalHeightPct}%` }}
                                                 >
-                                                    {formatNumber(totalLoad)} zł
+                                                    <AnimatedNumber value={totalLoad} /> zł
                                                 </div>
 
-                                                {/* Warstwy słupka (kolejność od dołu: ZUS, NFZ, PIT) */}
-                                                <div className="tw-w-full tw-bg-yellow-500 tw-relative tw-group" style={{ height: `${hZus}%` }}></div>
+                                                <div className="tw-w-full tw-bg-yellow-400 tw-relative tw-group" style={{ height: `${hZus}%` }}></div>
                                                 <div className="tw-w-full tw-bg-blue-400 tw-relative tw-group" style={{ height: `${hHealth}%` }}></div>
-                                                <div className="tw-w-full tw-bg-red-400 tw-relative tw-group tw-rounded-t-md" style={{ height: `${hTax}%` }}></div>
+                                                <div className="tw-w-full tw-bg-red-400 tw-relative tw-group tw-rounded-t-lg" style={{ height: `${hTax}%` }}></div>
                                             </div>
                                             
-                                            {/* Etykieta pod słupkiem */}
                                             <div className="tw-mt-3 tw-text-center">
-                                                <div className={`tw-text-xs tw-font-bold ${isBest ? 'tw-text-emerald-600' : 'tw-text-slate-700'}`}>
+                                                <div className={`tw-text-[10px] tw-font-bold ${isBest ? 'tw-text-emerald-600' : 'tw-text-slate-600'}`}>
                                                     {r.id === 'skala' ? 'Skala' : r.id === 'liniowy' ? 'Liniowy' : 'Ryczałt'}
                                                 </div>
-                                                {isBest && <div className="tw-text-[10px] tw-text-emerald-500 tw-font-semibold">Najlepsza</div>}
+                                                {isBest && <div className="tw-text-[9px] tw-text-emerald-500 tw-font-bold tw-uppercase tw-mt-0.5">Najlepsza</div>}
                                             </div>
                                         </div>
                                      );
                                  });
                              })()}
                         </div>
-                        {/* Legenda wykresu */}
-                        <div className="tw-mt-6 tw-flex tw-justify-center tw-flex-wrap tw-gap-4 tw-text-xs tw-text-slate-500 tw-pt-4 tw-border-t tw-border-slate-100">
+                        <div className="tw-mt-6 tw-flex tw-justify-center tw-flex-wrap tw-gap-5 tw-text-[10px] tw-font-medium tw-text-slate-500 tw-pt-4 tw-border-t tw-border-slate-100">
                              <div className="tw-flex tw-items-center tw-gap-2">
-                                  <div className="tw-w-3 tw-h-3 tw-bg-red-400 tw-rounded-sm"></div> Podatek (PIT)
+                                  <div className="tw-w-3 tw-h-3 tw-bg-red-400 tw-rounded-full"></div> Podatek (PIT)
                              </div>
                              <div className="tw-flex tw-items-center tw-gap-2">
-                                  <div className="tw-w-3 tw-h-3 tw-bg-blue-400 tw-rounded-sm"></div> Zdrowotna (NFZ)
+                                  <div className="tw-w-3 tw-h-3 tw-bg-blue-400 tw-rounded-full"></div> Zdrowotna (NFZ)
                              </div>
                              <div className="tw-flex tw-items-center tw-gap-2">
-                                  <div className="tw-w-3 tw-h-3 tw-bg-yellow-500 tw-rounded-sm"></div> Społeczne (ZUS)
+                                  <div className="tw-w-3 tw-h-3 tw-bg-yellow-400 tw-rounded-full"></div> Społeczne (ZUS)
                              </div>
                         </div>
                     </div>
                  )}
-                 {/* Koniec sekcji wykresu */}
 
               </div>
             </div>
