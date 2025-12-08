@@ -95,17 +95,17 @@
         <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
     );
 
-    // --- 2. STAŁE PODATKOWE ---
+    // --- 2. STAŁE PODATKOWE (ZAKTUALIZOWANE NA ROK 2025) ---
     const TAX_FREE_AMOUNT = 30000;
     const TAX_THRESHOLD = 120000;
     const SOLIDARITY_THRESHOLD = 1000000;
     const SOLIDARITY_RATE = 0.04;
 
     const MONTHLY_ZUS_RATES = {
-        duzy: 1600,         
-        ulga: 0,            
-        preferencyjny: 600, 
-        maly_plus: 400,     
+        duzy: 1773.96,         // Pełny ZUS z chorobowym (2025)
+        ulga: 0,               // Ulga na start
+        preferencyjny: 442.90, // ZUS Preferencyjny z chorobowym (2025)
+        maly_plus: 442.90,     // Mały ZUS Plus - przyjęto wartość minimalną (podstawa = 30% min. wyn.)
     };
 
     // --- 3. FUNKCJE POMOCNICZE I LOGIKA ---
@@ -113,7 +113,6 @@
     // Funkcja formatująca liczby ze spacją jako separatorem tysięcy (np. "6 693")
     const formatNumber = (num) => {
         if (num === null || isNaN(num)) return '0';
-        // Używamy replace na stringu, aby wymusić spację jako separator
         return Math.round(num).toString().replace(/\B(?=(\d{3})+(?!\d))/g, " ");
     };
 
@@ -288,7 +287,7 @@
               </div>
               <div>
                 <h1 className="tw-text-3xl tw-font-bold tw-text-slate-900 tw-m-0">Kalkulator wyboru form opodatkowania</h1>
-                <p className="tw-text-slate-500 tw-m-0">Porównaj formy opodatkowania</p>
+                <p className="tw-text-slate-500 tw-m-0">Porównaj formy opodatkowania (Stawki 2025)</p>
               </div>
             </header>
 
@@ -325,7 +324,7 @@
                     <div>
                       <label className="tw-block tw-text-sm tw-font-medium tw-text-slate-700 tw-mb-1">Rodzaj ZUS (Społeczna)</label>
                       <select value={zusType} onChange={(e) => setZusType(e.target.value)}>
-                        <option value="duzy">Pełna społeczna ZUS + FP (Standard)</option>
+                        <option value="duzy">Pełna społeczna ZUS + FP (Standard 2025)</option>
                         <option value="ulga">Ulga na start (Społeczna: 0 zł, max 6 mies.)</option>
                         <option value="preferencyjny">ZUS Preferencyjny / Mały ZUS (max 24 mies.)</option>
                         <option value="maly_plus">Mały ZUS Plus (max 36 mies.)</option>
@@ -402,8 +401,6 @@
                       const isBest = index === 0;
                       const incomeTaxOnly = result.tax - result.solidarity;
                       
-                      // Obliczenie Efektywnego Opodatkowania
-                      // (Suma wszystkich obciążeń publicznych / Przychód całkowity) * 100
                       const totalPublicBurden = incomeTaxOnly + result.health + (result.monthlySocialZus * 12) + result.solidarity;
                       const effectiveTaxRate = totalAnnualRevenue > 0 ? (totalPublicBurden / totalAnnualRevenue) * 100 : 0;
 
@@ -434,7 +431,6 @@
                                       <div>Składka Zdrowotna: <b className="tw-text-slate-800">{formatNumber(result.health)} zł</b></div>
                                       <div>Składki ZUS: <b className="tw-text-slate-800">{formatNumber(result.monthlySocialZus * 12)} zł</b></div>
                                       
-                                      {/* --- NOWA POZYCJA: EFEKTYWNE OPODATKOWANIE --- */}
                                       <div className="tw-col-span-2 sm:tw-col-span-3 tw-mt-1 tw-pt-1 tw-border-t tw-border-slate-100 tw-flex tw-justify-between tw-items-center">
                                           <span>Efektywne opodatkowanie (obciążenie przychodu):</span>
                                           <b className="tw-text-indigo-600 tw-text-sm">{effectiveTaxRate.toFixed(2)}%</b>
