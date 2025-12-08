@@ -99,6 +99,56 @@
         cursor: not-allowed;
     }
 
+    /* Segmented Control - Nowoczesne przyciski */
+    .segmented-control {
+        position: relative;
+        display: flex;
+        background-color: #f1f5f9;
+        border-radius: 12px;
+        padding: 4px;
+        border: 1px solid #e2e8f0;
+    }
+
+    .segmented-control button {
+        flex: 1;
+        position: relative;
+        z-index: 2;
+        background: transparent;
+        border: none;
+        padding: 8px 12px;
+        font-family: 'Poppins', sans-serif;
+        font-size: 13px;
+        font-weight: 500;
+        color: #64748b;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        border-radius: 8px;
+    }
+    
+    .segmented-control button:hover {
+        color: #3b82f6;
+    }
+
+    .segmented-control button.active {
+        color: #1e40af; /* Ciemny niebieski dla tekstu aktywnego */
+        font-weight: 600;
+    }
+
+    /* Wskaźnik (tło aktywnego przycisku) - Jasnoniebieski */
+    .segmented-control-indicator {
+        position: absolute;
+        top: 4px;
+        left: 4px;
+        width: calc(50% - 4px); /* Zakładamy 2 opcje */
+        height: calc(100% - 8px);
+        background-color: #dbeafe; /* Bardzo jasny niebieski */
+        border: 1px solid #bfdbfe; /* Nieco ciemniejsza ramka */
+        border-radius: 8px;
+        z-index: 1;
+        transition: transform 0.3s cubic-bezier(0.2, 0, 0.2, 1);
+        box-shadow: 0 2px 4px rgba(59, 130, 246, 0.05);
+    }
+
     /* Klasa pomocnicza do liczb tabelarycznych */
     .tw-tabular-nums {
         font-variant-numeric: tabular-nums;
@@ -432,7 +482,8 @@
 
       return (
         <div className="tw-min-h-screen tw-bg-slate-50 tw-p-4 md:tw-p-8">
-          <div className="tw-max-w-6xl tw-mx-auto">
+          {/* ZMIANA 1: Zwiększona szerokość kontenera z max-w-6xl na max-w-[90rem] */}
+          <div className="tw-max-w-[90rem] tw-mx-auto">
             
             {/* Header */}
             <header className="tw-mb-8 tw-text-center md:tw-text-left tw-flex tw-items-center tw-gap-4">
@@ -448,10 +499,13 @@
             <div className="tw-grid tw-grid-cols-1 lg:tw-grid-cols-12 tw-gap-8">
               
               {/* LEWA KOLUMNA: PANELE KONFIGURACJI */}
-              <div className="lg:tw-col-span-4 tw-space-y-6">
+              {/* ZMIANA 2: Zmniejszona szerokość kolumny ustawień (z col-span-4 na col-span-3) */}
+              {/* ZMIANA 4: Zmiana na Flexbox, aby panele wypełniały wysokość (h-full) */}
+              <div className="lg:tw-col-span-3 tw-flex tw-flex-col tw-gap-6 tw-h-full">
                 
                 {/* Panel 1: Parametry */}
-                <div className="tw-bg-white tw-p-6 tw-rounded-2xl tw-shadow-modern tw-border tw-border-slate-100 tw-transition-all hover:tw-shadow-modern-lg">
+                {/* ZMIANA 5: Dodano tw-flex-1, aby panel się rozciągał */}
+                <div className="tw-bg-white tw-p-6 tw-rounded-2xl tw-shadow-modern tw-border tw-border-slate-100 tw-transition-all hover:tw-shadow-modern-lg tw-flex-1 tw-flex tw-flex-col">
                   <div className="tw-flex tw-justify-between tw-items-center tw-mb-4">
                       <h2 className="tw-text-base tw-font-bold tw-flex tw-items-center tw-gap-3 tw-text-slate-800 tw-m-0">
                         <div className="tw-p-2 tw-rounded-xl tw-bg-blue-100 tw-text-blue-600 tw-shadow-sm">
@@ -486,7 +540,8 @@
                 </div>
 
                 {/* Panel 2: Ustawienia */}
-                <div className="tw-bg-white tw-p-6 tw-rounded-2xl tw-shadow-modern tw-border tw-border-slate-100 tw-transition-all hover:tw-shadow-modern-lg">
+                {/* ZMIANA 5: Dodano tw-flex-1 */}
+                <div className="tw-bg-white tw-p-6 tw-rounded-2xl tw-shadow-modern tw-border tw-border-slate-100 tw-transition-all hover:tw-shadow-modern-lg tw-flex-1 tw-flex tw-flex-col">
                   <h2 className="tw-text-base tw-font-bold tw-mb-4 tw-flex tw-items-center tw-gap-3 tw-text-slate-800">
                     <div className="tw-p-2 tw-rounded-xl tw-bg-purple-100 tw-text-purple-600 tw-shadow-sm">
                         <SettingsIcon size={20} />
@@ -520,7 +575,8 @@
                 </div>
 
                 {/* Panel 3: Rodzina */}
-                <div className="tw-bg-white tw-p-6 tw-rounded-2xl tw-shadow-modern tw-border tw-border-slate-100 tw-transition-all hover:tw-shadow-modern-lg">
+                {/* ZMIANA 5: Dodano tw-flex-1 */}
+                <div className="tw-bg-white tw-p-6 tw-rounded-2xl tw-shadow-modern tw-border tw-border-slate-100 tw-transition-all hover:tw-shadow-modern-lg tw-flex-1 tw-flex tw-flex-col">
                    <h2 className="tw-text-base tw-font-bold tw-mb-4 tw-flex tw-items-center tw-gap-3 tw-text-slate-800">
                     <div className="tw-p-2 tw-rounded-xl tw-bg-emerald-100 tw-text-emerald-600 tw-shadow-sm">
                         <UsersIcon size={20} />
@@ -562,7 +618,8 @@
               </div>
 
               {/* PRAWA KOLUMNA: WYNIKI */}
-              <div className="lg:tw-col-span-8 tw-space-y-6">
+              {/* ZMIANA 2: Zwiększona szerokość kolumny wyników (z col-span-8 na col-span-9) */}
+              <div className="lg:tw-col-span-9 tw-space-y-6">
                  
                  {!hasInputCalc && (
                     <div className="tw-bg-white tw-p-12 tw-rounded-2xl tw-shadow-lg tw-border tw-border-slate-100 tw-text-center tw-text-slate-500 tw-flex tw-flex-col tw-items-center tw-justify-center tw-h-full">
@@ -586,22 +643,22 @@
                       return (
                         <div key={result.id} className={`tw-flex tw-flex-col tw-bg-white tw-rounded-2xl tw-border-2 tw-transition-all tw-duration-300 tw-relative tw-overflow-hidden ${isBest ? 'tw-border-emerald-500 tw-shadow-xl tw-scale-[1.02] tw-z-10' : 'tw-border-slate-100 tw-shadow-sm hover:tw-border-slate-300'}`}>
                           
-                          {/* KAFELEK HEADER */}
-                          <div className={`tw-p-4 ${isBest ? 'tw-bg-emerald-50' : 'tw-bg-white'} tw-border-b tw-border-slate-100`}>
+                          {/* KAFELEK HEADER - STAŁA WYSOKOŚĆ DLA WYRÓWNANIA */}
+                          <div className={`tw-p-4 tw-h-24 tw-flex tw-flex-col tw-justify-between ${isBest ? 'tw-bg-emerald-50' : 'tw-bg-white'} tw-border-b tw-border-slate-100`}>
                               <div className="tw-flex tw-justify-between tw-items-start">
-                                  <h4 className={`tw-font-bold tw-text-base ${isBest ? 'tw-text-emerald-800' : 'tw-text-slate-800'}`}>
+                                  <h4 className={`tw-font-bold tw-text-base tw-leading-tight ${isBest ? 'tw-text-emerald-800' : 'tw-text-slate-800'}`}>
                                     {result.name.replace(' (Wspólne)', '').replace('Podatkowa', '')}
                                     {result.id === 'skala' && isJointSettlement && <span className="tw-block tw-text-[10px] tw-font-normal tw-text-emerald-700">Wspólne rozliczenie</span>}
                                   </h4>
-                                  {isBest && <span className="tw-bg-emerald-500 tw-text-white tw-text-[10px] tw-uppercase tw-font-bold tw-px-2 tw-py-0.5 tw-rounded-full tw-shadow-sm">Najlepsza</span>}
+                                  {isBest && <span className="tw-bg-emerald-500 tw-text-white tw-text-[10px] tw-uppercase tw-font-bold tw-px-2 tw-py-0.5 tw-rounded-full tw-shadow-sm tw-whitespace-nowrap tw-ml-2">Najlepsza</span>}
                               </div>
-                              <div className={`tw-mt-1 tw-text-[10px] tw-font-bold tw-px-2 tw-py-1 tw-rounded tw-border ${diff > 0 ? 'tw-text-red-600 tw-bg-red-50 tw-border-red-100' : 'tw-invisible tw-border-transparent'}`}>
+                              <div className={`tw-mt-1 tw-text-[10px] tw-font-bold tw-px-2 tw-py-1 tw-rounded tw-border tw-w-max ${diff > 0 ? 'tw-text-red-600 tw-bg-red-50 tw-border-red-100' : 'tw-invisible tw-border-transparent'}`}>
                                   {diff > 0 ? <>+ <AnimatedNumber value={diff} /> zł rocznie</> : '-'}
                               </div>
                           </div>
 
-                          {/* GŁÓWNY WYNIK */}
-                          <div className="tw-p-5 tw-text-center">
+                          {/* GŁÓWNY WYNIK - STAŁA WYSOKOŚĆ DLA WYRÓWNANIA */}
+                          <div className="tw-p-5 tw-text-center tw-h-36 tw-flex tw-flex-col tw-justify-center">
                               <div className="tw-text-[10px] tw-font-bold tw-text-slate-400 tw-uppercase tw-tracking-wider tw-mb-1">Na rękę (mies.)</div>
                               <div className={`tw-text-3xl tw-font-extrabold ${isBest ? 'tw-text-emerald-600' : 'tw-text-slate-800'}`}>
                                 <AnimatedNumber value={result.monthlyNet} /> <span className="tw-text-base tw-font-medium">zł</span>
@@ -611,19 +668,20 @@
                               </div>
                           </div>
 
-                          {/* SZCZEGÓŁY MIESIĘCZNE */}
-                          <div className="tw-px-5 tw-pb-4 tw-space-y-2 tw-text-xs">
-                             <div className="tw-flex tw-justify-between tw-border-b tw-border-slate-100 tw-pb-1">
-                               <span className="tw-text-slate-500 tw-flex tw-items-center tw-gap-1.5"><TaxBadgeIcon size={14} className="tw-text-red-400"/> Podatek (PIT)</span>
-                               <span className="tw-font-semibold tw-text-slate-700"><AnimatedNumber value={incomeTaxOnly / 12} /> zł</span>
+                          {/* SZCZEGÓŁY MIESIĘCZNE - UKŁAD PIONOWY (LISTA) */}
+                          {/* Dzięki stałym wysokościom powyżej, te wiersze będą idealnie wyrównane między kolumnami */}
+                          <div className="tw-px-5 tw-pb-4 tw-space-y-2 tw-text-xs tw-flex-1">
+                             <div className="tw-flex tw-justify-between tw-items-center tw-border-b tw-border-slate-100 tw-pb-1 tw-h-7">
+                               <span className="tw-text-slate-500 tw-flex tw-items-center tw-gap-1.5 tw-truncate tw-mr-2"><TaxBadgeIcon size={14} className="tw-text-red-400 tw-flex-shrink-0"/> Podatek (PIT)</span>
+                               <span className="tw-font-semibold tw-text-slate-700 tw-whitespace-nowrap"><AnimatedNumber value={incomeTaxOnly / 12} /> zł</span>
                              </div>
-                             <div className="tw-flex tw-justify-between tw-border-b tw-border-slate-100 tw-pb-1">
-                               <span className="tw-text-slate-500 tw-flex tw-items-center tw-gap-1.5"><HeartIcon size={14} className="tw-text-blue-400"/> Składka zdrowotna (NFZ)</span>
-                               <span className="tw-font-semibold tw-text-slate-700"><AnimatedNumber value={result.monthlyHealth} /> zł</span>
+                             <div className="tw-flex tw-justify-between tw-items-center tw-border-b tw-border-slate-100 tw-pb-1 tw-h-7">
+                               <span className="tw-text-slate-500 tw-flex tw-items-center tw-gap-1.5 tw-truncate tw-mr-2"><HeartIcon size={14} className="tw-text-blue-400 tw-flex-shrink-0"/> Składka zdrowotna (NFZ)</span>
+                               <span className="tw-font-semibold tw-text-slate-700 tw-whitespace-nowrap"><AnimatedNumber value={result.monthlyHealth} /> zł</span>
                              </div>
-                             <div className="tw-flex tw-items-center tw-justify-between tw-border-b tw-border-slate-100 tw-pb-1">
-                               <span className="tw-text-slate-500 tw-flex tw-items-center tw-gap-1.5"><ShieldIcon size={14} className="tw-text-yellow-500"/> Społeczne ZUS</span>
-                               <span className="tw-font-semibold tw-text-slate-700"><AnimatedNumber value={result.monthlySocialZus} /> zł</span>
+                             <div className="tw-flex tw-items-center tw-justify-between tw-border-b tw-border-slate-100 tw-pb-1 tw-h-7">
+                               <span className="tw-text-slate-500 tw-flex tw-items-center tw-gap-1.5 tw-truncate tw-mr-2"><ShieldIcon size={14} className="tw-text-yellow-500 tw-flex-shrink-0"/> Społeczne ZUS</span>
+                               <span className="tw-font-semibold tw-text-slate-700 tw-whitespace-nowrap"><AnimatedNumber value={result.monthlySocialZus} /> zł</span>
                              </div>
                           </div>
                           
@@ -691,71 +749,71 @@
                     })}
                  </div>
                  )}
-
-                 {/* Wykres Porównawczy */}
-                 {hasInputCalc && resultsCalc.length > 0 && (
-                    <div className="tw-bg-white tw-p-6 tw-rounded-2xl tw-shadow-lg tw-border tw-border-slate-100 tw-mt-8">
-                        <h2 className="tw-text-lg tw-font-bold tw-mb-8 tw-text-slate-800">Porównanie Rocznych Obciążeń (Podatki + ZUS)</h2>
-                        <div className="tw-flex tw-items-end tw-justify-around tw-h-56 tw-gap-4 md:tw-gap-8 tw-pb-2">
-                             {(() => {
-                                 const maxLoad = Math.max(...resultsCalc.map(r => r.tax + r.health + (r.monthlySocialZus * 12)));
-                                 const scale = maxLoad > 0 ? maxLoad : 1;
-
-                                 return resultsCalc.map(r => {
-                                     const annualZus = r.monthlySocialZus * 12;
-                                     const annualHealth = r.health;
-                                     const annualTax = r.tax;
-                                     const totalLoad = annualZus + annualHealth + annualTax;
-                                     const totalHeightPct = (totalLoad / scale) * 100;
-                                     
-                                     const hZus = (annualZus / scale) * 100;
-                                     const hHealth = (annualHealth / scale) * 100;
-                                     const hTax = (annualTax / scale) * 100;
-                                     
-                                     const isBest = r === resultsCalc[0];
-
-                                     return (
-                                        <div key={r.id} className="tw-flex tw-flex-col tw-items-center tw-w-full tw-max-w-[120px] tw-group">
-                                            <div className="tw-w-full tw-flex tw-flex-col-reverse tw-relative tw-rounded-t-lg tw-overflow-visible tw-shadow-sm tw-transition-all tw-duration-300 group-hover:tw-shadow-md" style={{ height: '200px' }}>
-                                                <div 
-                                                    className="tw-absolute tw-left-1/2 tw-transform tw--translate-x-1/2 tw-mb-2 tw-text-[10px] tw-font-bold tw-text-slate-600 tw-bg-white tw-px-1.5 tw-py-0.5 tw-rounded tw-shadow-sm tw-whitespace-nowrap tw-z-10"
-                                                    style={{ bottom: `${totalHeightPct}%` }}
-                                                >
-                                                    <AnimatedNumber value={totalLoad} /> zł
-                                                </div>
-
-                                                <div className="tw-w-full tw-bg-yellow-400 tw-relative tw-group" style={{ height: `${hZus}%` }}></div>
-                                                <div className="tw-w-full tw-bg-blue-400 tw-relative tw-group" style={{ height: `${hHealth}%` }}></div>
-                                                <div className="tw-w-full tw-bg-red-400 tw-relative tw-group tw-rounded-t-lg" style={{ height: `${hTax}%` }}></div>
-                                            </div>
-                                            
-                                            <div className="tw-mt-3 tw-text-center">
-                                                <div className={`tw-text-[10px] tw-font-bold ${isBest ? 'tw-text-emerald-600' : 'tw-text-slate-600'}`}>
-                                                    {r.id === 'skala' ? 'Skala' : r.id === 'liniowy' ? 'Liniowy' : 'Ryczałt'}
-                                                </div>
-                                                {isBest && <div className="tw-text-[9px] tw-text-emerald-500 tw-font-bold tw-uppercase tw-mt-0.5">Najlepsza</div>}
-                                            </div>
-                                        </div>
-                                     );
-                                 });
-                             })()}
-                        </div>
-                        <div className="tw-mt-6 tw-flex tw-justify-center tw-flex-wrap tw-gap-5 tw-text-[10px] tw-font-medium tw-text-slate-500 tw-pt-4 tw-border-t tw-border-slate-100">
-                             <div className="tw-flex tw-items-center tw-gap-2">
-                                  <div className="tw-w-3 tw-h-3 tw-bg-red-400 tw-rounded-full"></div> Podatek (PIT)
-                             </div>
-                             <div className="tw-flex tw-items-center tw-gap-2">
-                                  <div className="tw-w-3 tw-h-3 tw-bg-blue-400 tw-rounded-full"></div> Zdrowotna (NFZ)
-                             </div>
-                             <div className="tw-flex tw-items-center tw-gap-2">
-                                  <div className="tw-w-3 tw-h-3 tw-bg-yellow-400 tw-rounded-full"></div> Społeczne (ZUS)
-                             </div>
-                        </div>
-                    </div>
-                 )}
-
+                 {/* ZMIANA 6: Usunięto stąd wykres (przeniesiono na dół), aby lewa kolumna wyrównywała się tylko do kart */}
               </div>
             </div>
+            
+            {/* ZMIANA 6: Wykres Porównawczy przeniesiony tutaj, pod spód, na całą szerokość */}
+            {hasInputCalc && resultsCalc.length > 0 && (
+                <div className="tw-bg-white tw-p-6 tw-rounded-2xl tw-shadow-lg tw-border tw-border-slate-100 tw-mt-8 tw-max-w-4xl tw-mx-auto">
+                    <h2 className="tw-text-lg tw-font-bold tw-mb-8 tw-text-slate-800 tw-text-center">Porównanie Rocznych Obciążeń (Podatki + ZUS)</h2>
+                    <div className="tw-flex tw-items-end tw-justify-center tw-h-56 tw-gap-8 md:tw-gap-16 tw-pb-2">
+                            {(() => {
+                                const maxLoad = Math.max(...resultsCalc.map(r => r.tax + r.health + (r.monthlySocialZus * 12)));
+                                const scale = maxLoad > 0 ? maxLoad : 1;
+
+                                return resultsCalc.map(r => {
+                                    const annualZus = r.monthlySocialZus * 12;
+                                    const annualHealth = r.health;
+                                    const annualTax = r.tax;
+                                    const totalLoad = annualZus + annualHealth + annualTax;
+                                    const totalHeightPct = (totalLoad / scale) * 100;
+                                    
+                                    const hZus = (annualZus / scale) * 100;
+                                    const hHealth = (annualHealth / scale) * 100;
+                                    const hTax = (annualTax / scale) * 100;
+                                    
+                                    const isBest = r === resultsCalc[0];
+
+                                    return (
+                                    <div key={r.id} className="tw-flex tw-flex-col tw-items-center tw-w-24 tw-group">
+                                        <div className="tw-w-full tw-flex tw-flex-col-reverse tw-relative tw-rounded-t-lg tw-overflow-visible tw-shadow-sm tw-transition-all tw-duration-300 group-hover:tw-shadow-md" style={{ height: '200px' }}>
+                                            <div 
+                                                className="tw-absolute tw-left-1/2 tw-transform tw--translate-x-1/2 tw-mb-2 tw-text-[10px] tw-font-bold tw-text-slate-600 tw-bg-white tw-px-1.5 tw-py-0.5 tw-rounded tw-shadow-sm tw-whitespace-nowrap tw-z-10"
+                                                style={{ bottom: `${totalHeightPct}%` }}
+                                            >
+                                                <AnimatedNumber value={totalLoad} /> zł
+                                            </div>
+
+                                            <div className="tw-w-full tw-bg-yellow-400 tw-relative tw-group" style={{ height: `${hZus}%` }}></div>
+                                            <div className="tw-w-full tw-bg-blue-400 tw-relative tw-group" style={{ height: `${hHealth}%` }}></div>
+                                            <div className="tw-w-full tw-bg-red-400 tw-relative tw-group tw-rounded-t-lg" style={{ height: `${hTax}%` }}></div>
+                                        </div>
+                                        
+                                        <div className="tw-mt-3 tw-text-center">
+                                            <div className={`tw-text-[10px] tw-font-bold ${isBest ? 'tw-text-emerald-600' : 'tw-text-slate-600'}`}>
+                                                {r.id === 'skala' ? 'Skala' : r.id === 'liniowy' ? 'Liniowy' : 'Ryczałt'}
+                                            </div>
+                                            {isBest && <div className="tw-text-[9px] tw-text-emerald-500 tw-font-bold tw-uppercase tw-mt-0.5">Najlepsza</div>}
+                                        </div>
+                                    </div>
+                                    );
+                                });
+                            })()}
+                    </div>
+                    <div className="tw-mt-6 tw-flex tw-justify-center tw-flex-wrap tw-gap-5 tw-text-[10px] tw-font-medium tw-text-slate-500 tw-pt-4 tw-border-t tw-border-slate-100">
+                            <div className="tw-flex tw-items-center tw-gap-2">
+                                <div className="tw-w-3 tw-h-3 tw-bg-red-400 tw-rounded-full"></div> Podatek (PIT)
+                            </div>
+                            <div className="tw-flex tw-items-center tw-gap-2">
+                                <div className="tw-w-3 tw-h-3 tw-bg-blue-400 tw-rounded-full"></div> Zdrowotna (NFZ)
+                            </div>
+                            <div className="tw-flex tw-items-center tw-gap-2">
+                                <div className="tw-w-3 tw-h-3 tw-bg-yellow-400 tw-rounded-full"></div> Społeczne (ZUS)
+                            </div>
+                    </div>
+                </div>
+            )}
           </div>
         </div>
       );
