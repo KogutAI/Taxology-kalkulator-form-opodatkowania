@@ -2,6 +2,9 @@
 <html lang="pl">
 <head>
 <meta charset="UTF-8">
+<!-- WAŻNE: Meta tag dla responsywności na urządzeniach mobilnych -->
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+
 <!-- Stylizacja: Tailwind CSS w trybie bezpiecznym (nie psuje strony WP) -->
 <script src="https://cdn.tailwindcss.com"></script>
 <script>
@@ -45,14 +48,23 @@
 <style>
     /* Izolowany kontener dla kalkulatora */
     #tax-calculator-root-2026 {
-        font-family: 'Poppins', sans-serif; /* Zastosowanie nowego fontu */
+        font-family: 'Poppins', sans-serif;
         background-color: #f8fafc;
-        border-radius: 24px; /* Większe zaokrąglenie */
-        box-shadow: 0 10px 40px -10px rgba(0, 0, 0, 0.08); /* Nowoczesny, głęboki cień */
+        border-radius: 24px;
+        box-shadow: 0 10px 40px -10px rgba(0, 0, 0, 0.08);
         padding: 32px;
         margin: 20px 0;
         color: #1e293b;
         line-height: 1.6;
+    }
+
+    /* Responsywne style dla kontenera na mobile */
+    @media (max-width: 768px) {
+        #tax-calculator-root-2026 {
+            padding: 16px; /* Mniejszy padding na mobile */
+            border-radius: 16px;
+            margin: 10px 0;
+        }
     }
     
     /* Reset podstawowych elementów wewnątrz kalkulatora */
@@ -70,16 +82,27 @@
         display: block;
         width: 100%;
         padding: 0.75rem 1rem;
-        font-size: 0.95rem;
+        /* Na mobile (iPhone) font-size 16px zapobiega auto-zoomowi przy focusie */
+        font-size: 16px; 
         font-family: 'Poppins', sans-serif;
         line-height: 1.5;
-        border-radius: 0.75rem; /* Bardziej zaokrąglone inputy */
+        border-radius: 0.75rem;
         border: 1px solid #e2e8f0;
         background-color: #ffffff;
         margin-top: 0.35rem;
         color: #0f172a;
         box-shadow: 0 2px 5px rgba(0,0,0,0.02);
         transition: all 0.2s ease;
+        -webkit-appearance: none; /* Usuwa domyślne style iOS */
+    }
+
+    /* Na desktopie możemy zmniejszyć font inputów, jeśli chcemy */
+    @media (min-width: 768px) {
+        #tax-calculator-root-2026 input[type="text"],
+        #tax-calculator-root-2026 input[type="number"], 
+        #tax-calculator-root-2026 select {
+            font-size: 0.95rem;
+        }
     }
 
     /* Specyficzne paddingi dla inputów z walutą */
@@ -90,7 +113,7 @@
     #tax-calculator-root-2026 input:focus, 
     #tax-calculator-root-2026 select:focus {
         outline: none;
-        border-color: #6366f1; /* Zmiana na nowoczesny indygo */
+        border-color: #6366f1;
         box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.15);
     }
     
@@ -130,7 +153,7 @@
     }
 
     .segmented-control button.active {
-        color: #1e40af; /* Ciemny niebieski dla tekstu aktywnego */
+        color: #1e40af;
         font-weight: 600;
     }
 
@@ -139,10 +162,10 @@
         position: absolute;
         top: 4px;
         left: 4px;
-        width: calc(50% - 4px); /* Zakładamy 2 opcje */
+        width: calc(50% - 4px);
         height: calc(100% - 8px);
-        background-color: #dbeafe; /* Bardzo jasny niebieski */
-        border: 1px solid #bfdbfe; /* Nieco ciemniejsza ramka */
+        background-color: #dbeafe;
+        border: 1px solid #bfdbfe;
         border-radius: 8px;
         z-index: 1;
         transition: transform 0.3s cubic-bezier(0.2, 0, 0.2, 1);
@@ -152,20 +175,20 @@
     /* Klasa pomocnicza do liczb tabelarycznych */
     .tw-tabular-nums {
         font-variant-numeric: tabular-nums;
-        letter-spacing: -0.02em; /* Lekkie zwężenie dla cyfr */
+        letter-spacing: -0.02em;
     }
 </style>
 </head>
 <body>
 
-<!-- Kontener aplikacji (Zmienione ID dla uniknięcia konfliktów) -->
+<!-- Kontener aplikacji -->
 <div id="tax-calculator-root-2026"></div>
 
 <!-- Logika aplikacji -->
 <script type="text/babel">
     const { useState, useMemo, useCallback, useEffect } = React;
 
-    // --- 1. IKONY (Bez zmian) ---
+    // --- 1. IKONY ---
     
     const CalculatorIcon = ({ size = 24, className }) => (
         <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><rect width="16" height="20" x="4" y="2" rx="2" ry="2"/><line x1="8" x2="16" y1="6" y2="6"/><line x1="16" x2="16" y1="14" y2="18"/><line x1="8" x2="8" y1="14" y2="18"/><line x1="12" x2="12" y1="14" y2="18"/><line x1="8" x2="16" y1="10" y2="10"/></svg>
@@ -193,22 +216,20 @@
         <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="12" x2="12" y1="18" y2="12"/><line x1="9" x2="15" y1="15" y2="15"/></svg>
     );
 
-    // --- 2. STAŁE PODATKOWE (STAWKI NA 2026 ROK - ZNANE W GRUDNIU 2025) ---
-    // Stan na grudzień 2025: Płaca minimalna i Prognozowane przeciętne wynagrodzenie (baza ZUS) są znane z Ustawy Budżetowej.
-    const TAX_FREE_AMOUNT = 30000; // Kwota wolna
-    const TAX_THRESHOLD = 120000; // Próg podatkowy
+    // --- 2. STAŁE PODATKOWE (STAWKI NA 2026 ROK) ---
+    const TAX_FREE_AMOUNT = 30000;
+    const TAX_THRESHOLD = 120000;
     const SOLIDARITY_THRESHOLD = 1000000;
     const SOLIDARITY_RATE = 0.04;
 
-    // SKŁADKI ZUS NA 2026 (Wg Ustawy Budżetowej na 2026)
     const MONTHLY_ZUS_RATES = {
-        duzy: 1950.00,         // ZUS Duży (z chorobowym, bez zdrowotnej) - wartość przykładowa (ok. 1950 zł w 2026)
-        ulga: 0,               // Ulga na start
-        preferencyjny: 485.00, // ZUS Preferencyjny (od podstawy 30% min. wynagrodzenia w 2026)
-        maly_plus: 485.00,     // Mały ZUS Plus min.
+        duzy: 1950.00,
+        ulga: 0,
+        preferencyjny: 485.00,
+        maly_plus: 485.00,
     };
 
-    // --- 3. FUNKCJE POMOCNICZE I LOGIKA (Bez zmian) ---
+    // --- 3. FUNKCJE POMOCNICZE I LOGIKA ---
     
     const formatNumber = (num) => {
         if (num === null || isNaN(num)) return '0';
@@ -383,7 +404,7 @@
         const ryczaltSolidarityTax = 0; 
 
         let monthlyRyczaltHealth = 0;
-        if (annualRevenue < 60000) monthlyRyczaltHealth = 419; // Zakładamy brak zmian w progach zdrowotnych
+        if (annualRevenue < 60000) monthlyRyczaltHealth = 419; 
         else if (annualRevenue < 300000) monthlyRyczaltHealth = 699;
         else monthlyRyczaltHealth = 1258;
         
@@ -475,29 +496,28 @@
       };
 
       return (
-        <div className="tw-min-h-screen tw-bg-slate-50 tw-p-4 md:tw-p-8">
-          {/* ZMIANA 1: Szerokość max-w-[90rem] */}
+        <div className="tw-min-h-screen tw-bg-slate-50 tw-p-2 md:tw-p-8">
+          {/* ZMIANA: Responsywny max-width i padding */}
           <div className="tw-max-w-[90rem] tw-mx-auto">
             
             {/* Header */}
-            <header className="tw-mb-8 tw-text-center md:tw-text-left tw-flex tw-items-center tw-gap-4">
+            <header className="tw-mb-6 md:tw-mb-8 tw-text-center md:tw-text-left tw-flex tw-flex-col md:tw-flex-row tw-items-center tw-justify-center md:tw-justify-start tw-gap-4">
               <div className="tw-bg-gradient-to-br tw-from-indigo-500 tw-to-indigo-700 tw-p-3 tw-rounded-xl tw-shadow-lg tw-text-white">
                 <CalculatorIcon size={32} />
               </div>
               <div>
-                {/* ZMIANA NAGŁÓWKA NA 2026 - USUNIĘTO "PROGNOZA" */}
-                <h1 className="tw-text-3xl tw-font-extrabold tw-text-slate-900 tw-m-0 tw-tracking-tight">Kalkulator Podatkowy 2026</h1>
-                <p className="tw-text-slate-500 tw-m-0 tw-font-medium">Porównaj formy opodatkowania (Stawki wg budżetu 2026)</p>
+                <h1 className="tw-text-2xl md:tw-text-3xl tw-font-extrabold tw-text-slate-900 tw-m-0 tw-tracking-tight">Kalkulator Podatkowy 2026</h1>
+                <p className="tw-text-sm md:tw-text-base tw-text-slate-500 tw-m-0 tw-font-medium">Porównaj formy opodatkowania (Stawki wg budżetu 2026)</p>
               </div>
             </header>
 
-            <div className="tw-grid tw-grid-cols-1 lg:tw-grid-cols-12 tw-gap-8">
+            <div className="tw-grid tw-grid-cols-1 lg:tw-grid-cols-12 tw-gap-6 md:tw-gap-8">
               
               {/* LEWA KOLUMNA: PANELE KONFIGURACJI */}
-              <div className="lg:tw-col-span-3 tw-flex tw-flex-col tw-gap-6 tw-h-full">
+              <div className="lg:tw-col-span-3 tw-flex tw-flex-col tw-gap-4 md:tw-gap-6 tw-h-full">
                 
                 {/* Panel 1: Parametry */}
-                <div className="tw-bg-white tw-p-6 tw-rounded-2xl tw-shadow-modern tw-border tw-border-slate-100 tw-transition-all hover:tw-shadow-modern-lg tw-flex-1 tw-flex tw-flex-col">
+                <div className="tw-bg-white tw-p-5 md:tw-p-6 tw-rounded-2xl tw-shadow-modern tw-border tw-border-slate-100 tw-transition-all hover:tw-shadow-modern-lg tw-flex-1 tw-flex tw-flex-col">
                   <div className="tw-flex tw-justify-between tw-items-center tw-mb-4">
                       <h2 className="tw-text-base tw-font-bold tw-flex tw-items-center tw-gap-3 tw-text-slate-800 tw-m-0">
                         <div className="tw-p-2 tw-rounded-xl tw-bg-blue-100 tw-text-blue-600 tw-shadow-sm">
@@ -513,7 +533,7 @@
                       <button onClick={() => handleModeChange('yearly')} className={inputMode === 'yearly' ? 'active' : ''}>Rocznie</button>
                   </div>
 
-                  <div className="tw-grid tw-grid-cols-2 tw-gap-4">
+                  <div className="tw-grid tw-grid-cols-1 sm:tw-grid-cols-2 lg:tw-grid-cols-2 tw-gap-4">
                     <div>
                       <label className="tw-block tw-text-[11px] tw-font-bold tw-text-slate-500 tw-uppercase tw-tracking-wider tw-mb-1.5">Przychód</label>
                       <div className="tw-relative currency-input">
@@ -532,7 +552,7 @@
                 </div>
 
                 {/* Panel 2: Ustawienia */}
-                <div className="tw-bg-white tw-p-6 tw-rounded-2xl tw-shadow-modern tw-border tw-border-slate-100 tw-transition-all hover:tw-shadow-modern-lg tw-flex-1 tw-flex tw-flex-col">
+                <div className="tw-bg-white tw-p-5 md:tw-p-6 tw-rounded-2xl tw-shadow-modern tw-border tw-border-slate-100 tw-transition-all hover:tw-shadow-modern-lg tw-flex-1 tw-flex tw-flex-col">
                   <h2 className="tw-text-base tw-font-bold tw-mb-4 tw-flex tw-items-center tw-gap-3 tw-text-slate-800">
                     <div className="tw-p-2 tw-rounded-xl tw-bg-purple-100 tw-text-purple-600 tw-shadow-sm">
                         <SettingsIcon size={20} />
@@ -566,7 +586,7 @@
                 </div>
 
                 {/* Panel 3: Rodzina */}
-                <div className="tw-bg-white tw-p-6 tw-rounded-2xl tw-shadow-modern tw-border tw-border-slate-100 tw-transition-all hover:tw-shadow-modern-lg tw-flex-1 tw-flex tw-flex-col">
+                <div className="tw-bg-white tw-p-5 md:tw-p-6 tw-rounded-2xl tw-shadow-modern tw-border tw-border-slate-100 tw-transition-all hover:tw-shadow-modern-lg tw-flex-1 tw-flex tw-flex-col">
                    <h2 className="tw-text-base tw-font-bold tw-mb-4 tw-flex tw-items-center tw-gap-3 tw-text-slate-800">
                     <div className="tw-p-2 tw-rounded-xl tw-bg-emerald-100 tw-text-emerald-600 tw-shadow-sm">
                         <UsersIcon size={20} />
@@ -574,10 +594,10 @@
                     Rodzina
                   </h2>
                   
-                  {/* UKŁAD GRID DLA RODZINY (ZACHOWANY) */}
-                  <div className="tw-grid tw-grid-cols-2 tw-gap-4 tw-items-end">
+                  {/* UKŁAD GRID DLA RODZINY - ZMODYFIKOWANY NA MOBILE */}
+                  <div className="tw-grid tw-grid-cols-1 sm:tw-grid-cols-2 tw-gap-4 tw-items-end">
                       
-                      <div className={`tw-flex tw-items-center tw-justify-between tw-bg-slate-50 tw-p-3 tw-rounded-xl tw-border tw-border-slate-200 ${isJointSettlement ? 'tw-col-span-2' : ''}`}>
+                      <div className={`tw-flex tw-items-center tw-justify-between tw-bg-slate-50 tw-p-3 tw-rounded-xl tw-border tw-border-slate-200 ${isJointSettlement ? 'tw-col-span-1 sm:tw-col-span-2' : ''}`}>
                           <span className="tw-text-sm tw-font-semibold tw-text-slate-700">Wspólne rozliczenie</span>
                           <div onClick={() => setIsJointSettlement(!isJointSettlement)} className={`tw-w-11 tw-h-6 tw-rounded-full tw-p-0.5 tw-cursor-pointer tw-transition-colors tw-duration-300 ${isJointSettlement ? 'tw-bg-emerald-500' : 'tw-bg-slate-300'}`}>
                             <div className={`tw-w-5 tw-h-5 tw-rounded-full tw-bg-white tw-shadow-sm tw-transform tw-transition-transform tw-duration-300 ${isJointSettlement ? 'tw-translate-x-5' : 'tw-translate-x-0'}`} />
@@ -613,7 +633,7 @@
               <div className="lg:tw-col-span-9 tw-space-y-6">
                  
                  {!hasInputCalc && (
-                    <div className="tw-bg-white tw-p-12 tw-rounded-2xl tw-shadow-lg tw-border tw-border-slate-100 tw-text-center tw-text-slate-500 tw-flex tw-flex-col tw-items-center tw-justify-center tw-h-full">
+                    <div className="tw-bg-white tw-p-8 md:tw-p-12 tw-rounded-2xl tw-shadow-lg tw-border tw-border-slate-100 tw-text-center tw-text-slate-500 tw-flex tw-flex-col tw-items-center tw-justify-center tw-h-full">
                         <CalculatorIcon size={64} className="tw-mb-4 tw-text-blue-300" />
                         <h3 className="tw-text-xl tw-font-semibold tw-text-slate-700 tw-mb-2">Wprowadź dane (2026)</h3>
                         <p className="tw-font-medium">Wpisz prognozowany przychód i koszty w panelu po lewej stronie.</p>
@@ -621,7 +641,7 @@
                  )}
 
                  {hasInputCalc && (
-                 <div className="tw-grid tw-grid-cols-1 md:tw-grid-cols-3 tw-gap-4">
+                 <div className="tw-grid tw-grid-cols-1 md:tw-grid-cols-3 tw-gap-4 md:tw-gap-6">
                     {resultsCalc.map((result, index) => {
                       const isBest = index === 0;
                       const incomeTaxOnly = result.tax - result.solidarity;
@@ -634,8 +654,8 @@
                       return (
                         <div key={result.id} className={`tw-flex tw-flex-col tw-bg-white tw-rounded-2xl tw-border-2 tw-transition-all tw-duration-300 tw-relative tw-overflow-hidden ${isBest ? 'tw-border-emerald-500 tw-shadow-xl tw-scale-[1.02] tw-z-10' : 'tw-border-slate-100 tw-shadow-sm hover:tw-border-slate-300'}`}>
                           
-                          {/* KAFELEK HEADER - STAŁA WYSOKOŚĆ (ZACHOWANA) */}
-                          <div className={`tw-p-4 tw-h-24 tw-flex tw-flex-col tw-justify-between ${isBest ? 'tw-bg-emerald-50' : 'tw-bg-white'} tw-border-b tw-border-slate-100`}>
+                          {/* KAFELEK HEADER - ELASTYCZNA WYSOKOŚĆ NA MOBILE */}
+                          <div className={`tw-p-4 md:tw-h-24 tw-flex tw-flex-col tw-justify-between ${isBest ? 'tw-bg-emerald-50' : 'tw-bg-white'} tw-border-b tw-border-slate-100`}>
                               <div className="tw-flex tw-justify-between tw-items-start">
                                   <h4 className={`tw-font-bold tw-text-base tw-leading-tight ${isBest ? 'tw-text-emerald-800' : 'tw-text-slate-800'}`}>
                                     {result.name.replace(' (Wspólne)', '').replace('Podatkowa', '')}
@@ -648,8 +668,8 @@
                               </div>
                           </div>
 
-                          {/* GŁÓWNY WYNIK - STAŁA WYSOKOŚĆ (ZACHOWANA) */}
-                          <div className="tw-p-5 tw-text-center tw-h-36 tw-flex tw-flex-col tw-justify-center">
+                          {/* GŁÓWNY WYNIK - ELASTYCZNA WYSOKOŚĆ NA MOBILE */}
+                          <div className="tw-p-5 tw-text-center md:tw-h-36 tw-flex tw-flex-col tw-justify-center">
                               <div className="tw-text-[10px] tw-font-bold tw-text-slate-400 tw-uppercase tw-tracking-wider tw-mb-1">Na rękę (mies.)</div>
                               <div className={`tw-text-3xl tw-font-extrabold ${isBest ? 'tw-text-emerald-600' : 'tw-text-slate-800'}`}>
                                 <AnimatedNumber value={result.monthlyNet} /> <span className="tw-text-base tw-font-medium">zł</span>
@@ -659,17 +679,17 @@
                               </div>
                           </div>
 
-                          {/* SZCZEGÓŁY MIESIĘCZNE - UKŁAD PIONOWY (ZACHOWANY) */}
+                          {/* SZCZEGÓŁY MIESIĘCZNE - ELASTYCZNA WYSOKOŚĆ WIERSZY NA MOBILE */}
                           <div className="tw-px-5 tw-pb-4 tw-space-y-2 tw-text-xs tw-flex-1">
-                             <div className="tw-flex tw-justify-between tw-items-center tw-border-b tw-border-slate-100 tw-pb-1 tw-h-7">
+                             <div className="tw-flex tw-justify-between tw-items-center tw-border-b tw-border-slate-100 tw-pb-1 md:tw-h-7">
                                <span className="tw-text-slate-500 tw-flex tw-items-center tw-gap-1.5 tw-truncate tw-mr-2"><TaxBadgeIcon size={14} className="tw-text-red-400 tw-flex-shrink-0"/> Podatek (PIT)</span>
                                <span className="tw-font-semibold tw-text-slate-700 tw-whitespace-nowrap"><AnimatedNumber value={incomeTaxOnly / 12} /> zł</span>
                              </div>
-                             <div className="tw-flex tw-justify-between tw-items-center tw-border-b tw-border-slate-100 tw-pb-1 tw-h-7">
+                             <div className="tw-flex tw-justify-between tw-items-center tw-border-b tw-border-slate-100 tw-pb-1 md:tw-h-7">
                                <span className="tw-text-slate-500 tw-flex tw-items-center tw-gap-1.5 tw-truncate tw-mr-2"><HeartIcon size={14} className="tw-text-blue-400 tw-flex-shrink-0"/> Składka zdrowotna (NFZ)</span>
                                <span className="tw-font-semibold tw-text-slate-700 tw-whitespace-nowrap"><AnimatedNumber value={result.monthlyHealth} /> zł</span>
                              </div>
-                             <div className="tw-flex tw-items-center tw-justify-between tw-border-b tw-border-slate-100 tw-pb-1 tw-h-7">
+                             <div className="tw-flex tw-items-center tw-justify-between tw-border-b tw-border-slate-100 tw-pb-1 md:tw-h-7">
                                <span className="tw-text-slate-500 tw-flex tw-items-center tw-gap-1.5 tw-truncate tw-mr-2"><ShieldIcon size={14} className="tw-text-yellow-500 tw-flex-shrink-0"/> Społeczne ZUS</span>
                                <span className="tw-font-semibold tw-text-slate-700 tw-whitespace-nowrap"><AnimatedNumber value={result.monthlySocialZus} /> zł</span>
                              </div>
