@@ -584,33 +584,39 @@
                     Rodzina
                   </h2>
                   
-                  <div className={`tw-grid tw-gap-4 tw-items-end ${isJointSettlement ? 'tw-grid-cols-1' : 'tw-grid-cols-2'}`}>
-                      <div className="tw-flex tw-items-center tw-justify-between tw-bg-slate-50 tw-p-3 tw-rounded-xl tw-border tw-border-slate-200">
+                  {/* ZMIANA 8: Nowy układ Grid dla sekcji Rodzina - stabilne pozycjonowanie elementów */}
+                  <div className="tw-grid tw-grid-cols-2 tw-gap-4 tw-items-end">
+                      
+                      {/* Element 1: Przełącznik */}
+                      {/* Jeśli wspólne rozliczenie: zajmuje całą szerokość (col-span-2). Jeśli nie: połowę (standardowo) */}
+                      <div className={`tw-flex tw-items-center tw-justify-between tw-bg-slate-50 tw-p-3 tw-rounded-xl tw-border tw-border-slate-200 ${isJointSettlement ? 'tw-col-span-2' : ''}`}>
                           <span className="tw-text-sm tw-font-semibold tw-text-slate-700">Wspólne rozliczenie</span>
                           <div onClick={() => setIsJointSettlement(!isJointSettlement)} className={`tw-w-11 tw-h-6 tw-rounded-full tw-p-0.5 tw-cursor-pointer tw-transition-colors tw-duration-300 ${isJointSettlement ? 'tw-bg-emerald-500' : 'tw-bg-slate-300'}`}>
                             <div className={`tw-w-5 tw-h-5 tw-rounded-full tw-bg-white tw-shadow-sm tw-transform tw-transition-transform tw-duration-300 ${isJointSettlement ? 'tw-translate-x-5' : 'tw-translate-x-0'}`} />
                           </div>
                       </div>
 
-                      <div className={isJointSettlement ? 'tw-grid tw-grid-cols-2 tw-gap-4' : ''}>
-                          {isJointSettlement && (
-                            <div className="tw-animate-in tw-slide-in-from-left-2 tw-duration-200">
-                              <label className="tw-block tw-text-[11px] tw-font-bold tw-text-slate-500 tw-uppercase tw-tracking-wider tw-mb-1.5">Dochód małżonka</label>
-                              <div className="tw-relative currency-input">
-                                  <input type="text" inputMode="numeric" value={formatCurrencyInput(spouseMonthlyIncome)} onChange={(e) => handleCurrencyChange(e, setSpouseMonthlyIncome)} placeholder="0" className="tw-w-full tw-pr-10 tw-font-semibold tw-text-slate-700" />
-                                  <span className="tw-absolute tw-right-3 tw-top-1/2 tw-transform tw--translate-y-1/2 tw-text-slate-400 tw-text-xs tw-font-medium">zł</span>
-                              </div>
-                            </div>
-                          )}
-
-                          <div>
-                            <label className="tw-block tw-text-[11px] tw-font-bold tw-text-slate-500 tw-uppercase tw-tracking-wider tw-mb-1.5">Liczba dzieci</label>
-                            <select value={numberOfChildren} onChange={(e) => setNumberOfChildren(Number(e.target.value))} className="tw-w-full tw-font-medium tw-text-slate-700">
-                                {[0, 1, 2, 3, 4, 5, 6, 7, 8, 9].map(num => (<option key={num} value={num}>{num}</option>))}
-                            </select>
+                      {/* Element 2: Dochód Małżonka (Pojawia się tylko przy wspólnym rozliczeniu) */}
+                      {isJointSettlement && (
+                        <div className="tw-animate-in tw-slide-in-from-left-2 tw-duration-200">
+                          <label className="tw-block tw-text-[11px] tw-font-bold tw-text-slate-500 tw-uppercase tw-tracking-wider tw-mb-1.5">Dochód małżonka</label>
+                          <div className="tw-relative currency-input">
+                              <input type="text" inputMode="numeric" value={formatCurrencyInput(spouseMonthlyIncome)} onChange={(e) => handleCurrencyChange(e, setSpouseMonthlyIncome)} placeholder="0" className="tw-w-full tw-pr-10 tw-font-semibold tw-text-slate-700" />
+                              <span className="tw-absolute tw-right-3 tw-top-1/2 tw-transform tw--translate-y-1/2 tw-text-slate-400 tw-text-xs tw-font-medium">zł</span>
                           </div>
+                        </div>
+                      )}
+
+                      {/* Element 3: Liczba dzieci (Zawsze widoczne) */}
+                      <div>
+                        <label className="tw-block tw-text-[11px] tw-font-bold tw-text-slate-500 tw-uppercase tw-tracking-wider tw-mb-1.5">Liczba dzieci</label>
+                        <select value={numberOfChildren} onChange={(e) => setNumberOfChildren(Number(e.target.value))} className="tw-w-full tw-font-medium tw-text-slate-700">
+                            {[0, 1, 2, 3, 4, 5, 6, 7, 8, 9].map(num => (<option key={num} value={num}>{num}</option>))}
+                        </select>
                       </div>
+
                   </div>
+                  
                   {(isJointSettlement || numberOfChildren > 0) && (
                       <p className="tw-text-[10px] tw-text-slate-400 tw-mt-3 tw-italic tw-font-medium">Ulgi te dotyczą tylko Skali Podatkowej.</p>
                   )}
@@ -753,67 +759,8 @@
               </div>
             </div>
             
-            {/* ZMIANA 6: Wykres Porównawczy przeniesiony tutaj, pod spód, na całą szerokość */}
-            {hasInputCalc && resultsCalc.length > 0 && (
-                <div className="tw-bg-white tw-p-6 tw-rounded-2xl tw-shadow-lg tw-border tw-border-slate-100 tw-mt-8 tw-max-w-4xl tw-mx-auto">
-                    <h2 className="tw-text-lg tw-font-bold tw-mb-8 tw-text-slate-800 tw-text-center">Porównanie Rocznych Obciążeń (Podatki + ZUS)</h2>
-                    <div className="tw-flex tw-items-end tw-justify-center tw-h-56 tw-gap-8 md:tw-gap-16 tw-pb-2">
-                            {(() => {
-                                const maxLoad = Math.max(...resultsCalc.map(r => r.tax + r.health + (r.monthlySocialZus * 12)));
-                                const scale = maxLoad > 0 ? maxLoad : 1;
-
-                                return resultsCalc.map(r => {
-                                    const annualZus = r.monthlySocialZus * 12;
-                                    const annualHealth = r.health;
-                                    const annualTax = r.tax;
-                                    const totalLoad = annualZus + annualHealth + annualTax;
-                                    const totalHeightPct = (totalLoad / scale) * 100;
-                                    
-                                    const hZus = (annualZus / scale) * 100;
-                                    const hHealth = (annualHealth / scale) * 100;
-                                    const hTax = (annualTax / scale) * 100;
-                                    
-                                    const isBest = r === resultsCalc[0];
-
-                                    return (
-                                    <div key={r.id} className="tw-flex tw-flex-col tw-items-center tw-w-24 tw-group">
-                                        <div className="tw-w-full tw-flex tw-flex-col-reverse tw-relative tw-rounded-t-lg tw-overflow-visible tw-shadow-sm tw-transition-all tw-duration-300 group-hover:tw-shadow-md" style={{ height: '200px' }}>
-                                            <div 
-                                                className="tw-absolute tw-left-1/2 tw-transform tw--translate-x-1/2 tw-mb-2 tw-text-[10px] tw-font-bold tw-text-slate-600 tw-bg-white tw-px-1.5 tw-py-0.5 tw-rounded tw-shadow-sm tw-whitespace-nowrap tw-z-10"
-                                                style={{ bottom: `${totalHeightPct}%` }}
-                                            >
-                                                <AnimatedNumber value={totalLoad} /> zł
-                                            </div>
-
-                                            <div className="tw-w-full tw-bg-yellow-400 tw-relative tw-group" style={{ height: `${hZus}%` }}></div>
-                                            <div className="tw-w-full tw-bg-blue-400 tw-relative tw-group" style={{ height: `${hHealth}%` }}></div>
-                                            <div className="tw-w-full tw-bg-red-400 tw-relative tw-group tw-rounded-t-lg" style={{ height: `${hTax}%` }}></div>
-                                        </div>
-                                        
-                                        <div className="tw-mt-3 tw-text-center">
-                                            <div className={`tw-text-[10px] tw-font-bold ${isBest ? 'tw-text-emerald-600' : 'tw-text-slate-600'}`}>
-                                                {r.id === 'skala' ? 'Skala' : r.id === 'liniowy' ? 'Liniowy' : 'Ryczałt'}
-                                            </div>
-                                            {isBest && <div className="tw-text-[9px] tw-text-emerald-500 tw-font-bold tw-uppercase tw-mt-0.5">Najlepsza</div>}
-                                        </div>
-                                    </div>
-                                    );
-                                });
-                            })()}
-                    </div>
-                    <div className="tw-mt-6 tw-flex tw-justify-center tw-flex-wrap tw-gap-5 tw-text-[10px] tw-font-medium tw-text-slate-500 tw-pt-4 tw-border-t tw-border-slate-100">
-                            <div className="tw-flex tw-items-center tw-gap-2">
-                                <div className="tw-w-3 tw-h-3 tw-bg-red-400 tw-rounded-full"></div> Podatek (PIT)
-                            </div>
-                            <div className="tw-flex tw-items-center tw-gap-2">
-                                <div className="tw-w-3 tw-h-3 tw-bg-blue-400 tw-rounded-full"></div> Zdrowotna (NFZ)
-                            </div>
-                            <div className="tw-flex tw-items-center tw-gap-2">
-                                <div className="tw-w-3 tw-h-3 tw-bg-yellow-400 tw-rounded-full"></div> Społeczne (ZUS)
-                            </div>
-                    </div>
-                </div>
-            )}
+            {/* ZMIANA 7: Usunięto Wykres Porównawczy zgodnie z żądaniem */}
+            
           </div>
         </div>
       );
