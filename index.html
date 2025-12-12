@@ -216,17 +216,47 @@
         <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="12" x2="12" y1="18" y2="12"/><line x1="9" x2="15" y1="15" y2="15"/></svg>
     );
 
-    // --- 2. STAŁE PODATKOWE (STAWKI NA 2026 ROK) ---
+    // --- 2. STAŁE PODATKOWE NA 2026 ROK (Zaktualizowane wg M.P. 2025 poz. 1206) ---
+    
+    // Podstawy:
+    // Prognozowane przeciętne wynagrodzenie 2026: 9420 zł (Podstawa Duży ZUS = 60% = 5652 zł)
+    // Minimalne wynagrodzenie 2026: 4806 zł (Podstawa Pref. ZUS = 30% = 1441.80 zł)
+    
     const TAX_FREE_AMOUNT = 30000;
     const TAX_THRESHOLD = 120000;
     const SOLIDARITY_THRESHOLD = 1000000;
     const SOLIDARITY_RATE = 0.04;
+    
+    // Minimalna składka zdrowotna (9% z 4806 zł)
+    const MIN_HEALTH_CONTRIBUTION = 432.54;
 
     const MONTHLY_ZUS_RATES = {
-        duzy: 1950.00,
+        // Duży ZUS: Podstawa 5652 zł. 
+        // Składki: Emerytalne(19.52%)+Rentowe(8%)+Chorobowe(2.45%)+Wypadkowe(1.67%)+FP(2.45%) = ~34.09%
+        // Suma: ok. 1926.76 zł
+        duzy: 1926.76,
+        
+        // Ulga na start: Tylko zdrowotna
         ulga: 0,
-        preferencyjny: 485.00,
-        maly_plus: 485.00,
+        
+        // Preferencyjny: Podstawa 1441.80 zł (30% z 4806).
+        // Składki: Em+Ren+Chor+Wyp (bez FP) = ~31.64%
+        // Suma: ok. 456.18 zł
+        preferencyjny: 456.18,
+        
+        // Mały ZUS Plus (Min): To samo co preferencyjny
+        maly_plus: 456.18,
+    };
+
+    // Szacowane stawki zdrowotne na Ryczałcie (zależne od przeciętnego wynagrodzenia w IV kw. 2025)
+    // Szacunek przy wzroście płac:
+    // Próg 1 (60%): ok. 480 zł
+    // Próg 2 (100%): ok. 800 zł
+    // Próg 3 (180%): ok. 1440 zł
+    const RYCZALT_HEALTH_RATES = {
+        low: 480,
+        mid: 800,
+        high: 1440
     };
 
     // --- 3. FUNKCJE POMOCNICZE I LOGIKA ---
@@ -317,7 +347,7 @@
 
         // 1. SKALA PODATKOWA
         const scaleIncome = Math.max(0, annualRevenue - annualCosts - annualSocialZus);
-        const scaleHealth = scaleIncome * 0.09; 
+        const scaleHealth = Math.max(scaleIncome * 0.09, MIN_HEALTH_CONTRIBUTION * 12); // Minimum health check
         let scaleTax = 0;
         let scaleTaxAbove = 0; 
         let scaleSolidarityTax = 0;
@@ -373,8 +403,8 @@
 
         // 2. PODATEK LINIOWY
         const linearIncome = Math.max(0, annualRevenue - annualCosts - annualSocialZus);
-        const linearHealth = linearIncome * 0.049; 
-        const deductibleHealth = Math.min(linearHealth, 11600); 
+        const linearHealth = Math.max(linearIncome * 0.049, MIN_HEALTH_CONTRIBUTION * 12); 
+        const deductibleHealth = Math.min(linearHealth, 11600); // Limit odliczenia (może wzrosnąć, ale na razie 11600)
         const linearTaxBase = Math.max(0, linearIncome - deductibleHealth);
         let linearTax = linearTaxBase * 0.19;
         let linearSolidarityTax = 0; 
@@ -404,9 +434,9 @@
         const ryczaltSolidarityTax = 0; 
 
         let monthlyRyczaltHealth = 0;
-        if (annualRevenue < 60000) monthlyRyczaltHealth = 419; 
-        else if (annualRevenue < 300000) monthlyRyczaltHealth = 699;
-        else monthlyRyczaltHealth = 1258;
+        if (annualRevenue < 60000) monthlyRyczaltHealth = RYCZALT_HEALTH_RATES.low;
+        else if (annualRevenue < 300000) monthlyRyczaltHealth = RYCZALT_HEALTH_RATES.mid;
+        else monthlyRyczaltHealth = RYCZALT_HEALTH_RATES.high;
         
         const annualRyczaltHealth = monthlyRyczaltHealth * 12;
         const ryczaltNet = annualRevenue - annualCosts - annualSocialZus - annualRyczaltHealth - ryczaltTax;
@@ -507,7 +537,7 @@
               </div>
               <div>
                 <h1 className="tw-text-2xl md:tw-text-3xl tw-font-extrabold tw-text-slate-900 tw-m-0 tw-tracking-tight">Kalkulator Podatkowy 2026</h1>
-                <p className="tw-text-sm md:tw-text-base tw-text-slate-500 tw-m-0 tw-font-medium">Porównaj formy opodatkowania (Stawki wg budżetu 2026)</p>
+                <p className="tw-text-sm md:tw-text-base tw-text-slate-500 tw-m-0 tw-font-medium">Na podstawie oficjalnych wskaźników</p>
               </div>
             </header>
 
@@ -563,12 +593,12 @@
                     <div>
                       <label className="tw-block tw-text-[11px] tw-font-bold tw-text-slate-500 tw-uppercase tw-tracking-wider tw-mb-1.5">Rodzaj ZUS (2026)</label>
                       <select value={zusType} onChange={(e) => setZusType(e.target.value)} className="tw-font-medium tw-text-slate-700">
-                        <option value="duzy">Pełny ZUS + FP (~1950 zł)</option>
+                        <option value="duzy">Pełny ZUS (1926,76 zł)</option>
                         <option value="ulga">Ulga na start (0 zł)</option>
-                        <option value="preferencyjny">ZUS Preferencyjny (~485 zł)</option>
-                        <option value="maly_plus">Mały ZUS Plus</option>
+                        <option value="preferencyjny">ZUS Preferencyjny (456,18 zł)</option>
+                        <option value="maly_plus">Mały ZUS Plus (min. 456,18 zł)</option>
                       </select>
-                       <p className="tw-text-[10px] tw-text-slate-400 tw-mt-1.5 tw-font-medium">Wartości bazowe z Ustawy Budżetowej na 2026 r.</p>
+                       <p className="tw-text-[10px] tw-text-slate-400 tw-mt-1.5 tw-font-medium">Duży ZUS wg prognozy 9420 zł (M.P. 2025 poz. 1206).</p>
                     </div>
                     <div>
                       <label className="tw-block tw-text-[11px] tw-font-bold tw-text-slate-500 tw-uppercase tw-tracking-wider tw-mb-1.5">Stawka Ryczałtu</label>
@@ -760,6 +790,134 @@
                  </div>
                  )}
               </div>
+            </div>
+
+            {/* NOWA SEKCJA: INFO NA PODSTAWIE ARTYKUŁU SYMFONIA */}
+            <div className="tw-mt-12 tw-border-t tw-border-slate-200 tw-pt-8">
+                <div className="tw-bg-white tw-rounded-2xl tw-p-6 md:tw-p-8 tw-shadow-sm tw-border tw-border-slate-100">
+                    <h3 className="tw-text-lg md:tw-text-xl tw-font-bold tw-text-slate-800 tw-mb-4 tw-flex tw-items-center tw-gap-2">
+                        <span className="tw-bg-blue-100 tw-text-blue-600 tw-p-1.5 tw-rounded-lg">
+                            <TrendingUpIcon size={20} />
+                        </span>
+                        Kluczowe zmiany w ZUS na 2026 rok
+                    </h3>
+                    <p className="tw-text-sm tw-text-slate-500 tw-mb-6">
+                        Oto najważniejsze wskaźniki wpływające na wysokość składek w 2026 roku:
+                    </p>
+                    
+                    <div className="tw-grid tw-grid-cols-1 md:tw-grid-cols-3 tw-gap-6">
+                        {/* Karta 1: Duży ZUS */}
+                        <div className="tw-bg-slate-50 tw-p-4 tw-rounded-xl tw-border tw-border-slate-200">
+                            <div className="tw-text-xs tw-font-bold tw-text-slate-400 tw-uppercase tw-tracking-wider tw-mb-2">Pełny ZUS (Duży)</div>
+                            <div className="tw-text-2xl tw-font-extrabold tw-text-slate-800 tw-mb-1">~1 926,76 zł</div>
+                            <div className="tw-text-xs tw-text-slate-600 tw-font-medium">miesięcznie (z chorobowym)</div>
+                            <div className="tw-mt-3 tw-pt-3 tw-border-t tw-border-slate-200 tw-text-xs tw-text-slate-500">
+                                <span className="tw-block tw-mb-1">Podstawa: <strong>5 652 zł</strong> (60% prognozy)</span>
+                                <span className="tw-text-emerald-600 tw-font-semibold">Wzrost o ok. 153 zł względem 2025 r.</span>
+                            </div>
+                        </div>
+
+                        {/* Karta 2: Preferencyjny ZUS */}
+                        <div className="tw-bg-slate-50 tw-p-4 tw-rounded-xl tw-border tw-border-slate-200">
+                            <div className="tw-text-xs tw-font-bold tw-text-slate-400 tw-uppercase tw-tracking-wider tw-mb-2">ZUS Preferencyjny</div>
+                            <div className="tw-text-2xl tw-font-extrabold tw-text-slate-800 tw-mb-1">~456,18 zł</div>
+                            <div className="tw-text-xs tw-text-slate-600 tw-font-medium">miesięcznie (z chorobowym)</div>
+                            <div className="tw-mt-3 tw-pt-3 tw-border-t tw-border-slate-200 tw-text-xs tw-text-slate-500">
+                                <span className="tw-block tw-mb-1">Podstawa: <strong>1 441,80 zł</strong> (30% min. płacy)</span>
+                                <span className="tw-text-emerald-600 tw-font-semibold">Wzrost o ok. 13 zł względem 2025 r.</span>
+                            </div>
+                        </div>
+
+                        {/* Karta 3: Składka Zdrowotna */}
+                        <div className="tw-bg-slate-50 tw-p-4 tw-rounded-xl tw-border tw-border-slate-200">
+                            <div className="tw-text-xs tw-font-bold tw-text-slate-400 tw-uppercase tw-tracking-wider tw-mb-2">Min. Składka Zdrowotna</div>
+                            <div className="tw-text-2xl tw-font-extrabold tw-text-slate-800 tw-mb-1">432,54 zł</div>
+                            <div className="tw-text-xs tw-text-slate-600 tw-font-medium">miesięcznie (minimum)</div>
+                            <div className="tw-mt-3 tw-pt-3 tw-border-t tw-border-slate-200 tw-text-xs tw-text-slate-500">
+                                <span className="tw-block tw-mb-1">Wyliczona od min. płacy: <strong>4 806 zł</strong></span>
+                                <span className="tw-text-emerald-600 tw-font-semibold">Wzrost o ok. 12,60 zł względem 2025 r.</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div className="tw-mt-4 tw-text-[10px] tw-text-slate-400 tw-text-center">
+                        * Wyliczenia mają charakter szacunkowy na podstawie prognozowanego przeciętnego wynagrodzenia (9 420 zł) oraz płacy minimalnej (4 806 zł). Ostateczne wartości mogą się nieznacznie różnić w zależności od wskaźnika wypadkowego.
+                    </div>
+                </div>
+            </div>
+
+            {/* NOWA SEKCJA: SZCZEGÓŁY SKŁADKI ZDROWOTNEJ WG GRANT THORNTON */}
+            <div className="tw-mt-8">
+                <div className="tw-bg-indigo-50 tw-rounded-2xl tw-p-6 md:tw-p-8 tw-shadow-sm tw-border tw-border-indigo-100">
+                    <h3 className="tw-text-lg md:tw-text-xl tw-font-bold tw-text-indigo-900 tw-mb-4 tw-flex tw-items-center tw-gap-2">
+                        <span className="tw-bg-white tw-text-indigo-600 tw-p-1.5 tw-rounded-lg tw-shadow-sm">
+                            <HeartIcon size={20} />
+                        </span>
+                        Składka zdrowotna 2026 – Analiza zmian
+                    </h3>
+                    <p className="tw-text-sm tw-text-indigo-700 tw-mb-6 tw-leading-relaxed">
+                        Zgodnie z analizami ekspertów (m.in. Grant Thornton), rok 2026 przynosi istotną zmianę dla przedsiębiorców o niższych dochodach. Wygasa rozwiązanie przejściowe z 2025 roku, które pozwalało liczyć minimalną składkę od 75% minimalnego wynagrodzenia.
+                    </p>
+
+                    <div className="tw-bg-white tw-rounded-xl tw-p-5 tw-shadow-sm tw-border tw-border-indigo-100">
+                        <div className="tw-flex tw-justify-between tw-items-end tw-mb-4 tw-border-b tw-border-slate-100 tw-pb-4">
+                            <div>
+                                <div className="tw-text-xs tw-font-bold tw-text-slate-400 tw-uppercase tw-tracking-wider">Minimalna podstawa składki</div>
+                                <div className="tw-text-2xl tw-font-extrabold tw-text-slate-800 tw-mt-1">
+                                    <span className="tw-line-through tw-text-slate-300 tw-text-lg tw-mr-2">75%</span>
+                                    <span className="tw-text-indigo-600">100%</span>
+                                </div>
+                                <div className="tw-text-xs tw-text-slate-500 tw-mt-1">minimalnego wynagrodzenia</div>
+                            </div>
+                            <div className="tw-text-right">
+                                <div className="tw-text-xs tw-font-bold tw-text-slate-400 tw-uppercase tw-tracking-wider">Wzrost kosztu (r/r)</div>
+                                <div className="tw-text-xl tw-font-bold tw-text-red-500 tw-mt-1">+37%</div>
+                            </div>
+                        </div>
+
+                        <div className="tw-grid tw-grid-cols-1 md:tw-grid-cols-2 tw-gap-8">
+                            <div>
+                                <h4 className="tw-text-sm tw-font-bold tw-text-slate-700 tw-mb-3">Porównanie minimalnej składki:</h4>
+                                <ul className="tw-space-y-3">
+                                    <li className="tw-flex tw-justify-between tw-items-center tw-text-sm">
+                                        <span className="tw-text-slate-500">Rok 2025 (4666 zł x 75% x 9%):</span>
+                                        <span className="tw-font-medium tw-text-slate-700">314,96 zł</span>
+                                    </li>
+                                    <li className="tw-flex tw-justify-between tw-items-center tw-text-sm">
+                                        <span className="tw-text-slate-500">Rok 2026 (4806 zł x 100% x 9%):</span>
+                                        <span className="tw-font-bold tw-text-indigo-700">432,54 zł</span>
+                                    </li>
+                                    <li className="tw-flex tw-justify-between tw-items-center tw-text-sm tw-pt-2 tw-border-t tw-border-slate-100">
+                                        <span className="tw-text-slate-500">Różnica miesięczna:</span>
+                                        <span className="tw-font-bold tw-text-red-500">+117,58 zł</span>
+                                    </li>
+                                    <li className="tw-flex tw-justify-between tw-items-center tw-text-sm">
+                                        <span className="tw-text-slate-500">Różnica roczna:</span>
+                                        <span className="tw-font-bold tw-text-red-500">+1 411 zł</span>
+                                    </li>
+                                </ul>
+                            </div>
+                            
+                            <div className="tw-bg-slate-50 tw-p-4 tw-rounded-lg">
+                                <h4 className="tw-text-xs tw-font-bold tw-text-slate-500 tw-uppercase tw-tracking-wider tw-mb-2">Kogo dotknie ta zmiana?</h4>
+                                <ul className="tw-space-y-2 tw-text-xs tw-text-slate-600">
+                                    <li className="tw-flex tw-items-start gap-2">
+                                        <div className="tw-min-w-[4px] tw-h-[4px] tw-rounded-full tw-bg-indigo-400 tw-mt-1.5"></div>
+                                        <span>Przedsiębiorców na <strong>Skali</strong> i <strong>Liniówce</strong>, którzy osiągają dochód niższy niż płaca minimalna (4806 zł) lub ponoszą stratę.</span>
+                                    </li>
+                                    <li className="tw-flex tw-items-start gap-2">
+                                        <div className="tw-min-w-[4px] tw-h-[4px] tw-rounded-full tw-bg-indigo-400 tw-mt-1.5"></div>
+                                        <span>Dla przedsiębiorców o wyższych dochodach zasady pozostają bez zmian (9% lub 4,9% od dochodu).</span>
+                                    </li>
+                                    <li className="tw-flex tw-items-start gap-2">
+                                        <div className="tw-min-w-[4px] tw-h-[4px] tw-rounded-full tw-bg-indigo-400 tw-mt-1.5"></div>
+                                        <span>Ryczałtowcy zapłacą składki oparte o nowe (wyższe) przeciętne wynagrodzenie z IV kw. 2025 r.</span>
+                                    </li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
             
           </div>
