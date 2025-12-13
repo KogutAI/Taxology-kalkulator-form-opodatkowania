@@ -215,6 +215,9 @@
     const TaxBadgeIcon = ({ size = 24, className }) => (
         <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="12" x2="12" y1="18" y2="12"/><line x1="9" x2="15" y1="15" y2="15"/></svg>
     );
+    const AlertTriangleIcon = ({ size = 24, className }) => (
+        <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><line x1="12" x2="12" y1="9" y2="13"/><line x1="12" x2="12.01" y1="17" y2="17"/></svg>
+    );
 
     // --- 2. STAŁE PODATKOWE NA 2026 ROK (Zaktualizowane wg M.P. 2025 poz. 1206) ---
     
@@ -258,6 +261,9 @@
         mid: 800,
         high: 1440
     };
+
+    // Limit dla pełnych ksiąg rachunkowych (2026): 2 500 000 EUR * kurs (przyjęto wartość użytkownika)
+    const ACCOUNTING_BOOKS_LIMIT = 10646500;
 
     // --- 3. FUNKCJE POMOCNICZE I LOGIKA ---
     
@@ -500,6 +506,9 @@
       const totalAnnualCostsCalc = monthlyCostsCalc * 12;
       const totalAnnualIncomeCalc = totalAnnualRevenueCalc - totalAnnualCostsCalc;
 
+      // Sprawdzenie limitu ksiąg rachunkowych
+      const isFullAccounting = totalAnnualRevenueCalc > ACCOUNTING_BOOKS_LIMIT;
+
       const handleModeChange = (newMode) => {
           if (newMode === inputMode) return;
           if (monthlyRevenue !== null) {
@@ -579,6 +588,22 @@
                       </div>
                     </div>
                   </div>
+
+                  {/* OSTRZEŻENIE O PEŁNEJ KSIĘGOWOŚCI */}
+                  {isFullAccounting && (
+                    <div className="tw-mt-4 tw-p-3 tw-bg-amber-50 tw-border tw-border-amber-200 tw-rounded-xl tw-flex tw-gap-3 tw-items-start tw-animate-in tw-fade-in tw-slide-in-from-top-1">
+                        <div className="tw-text-amber-500 tw-shrink-0">
+                            <AlertTriangleIcon size={20} />
+                        </div>
+                        <div>
+                            <p className="tw-text-xs tw-font-bold tw-text-amber-800 tw-mb-0.5">Wymagana Pełna Księgowość</p>
+                            <p className="tw-text-[11px] tw-text-amber-700 tw-leading-snug">
+                                Przychód roczny przekracza limit <strong>{formatNumber(ACCOUNTING_BOOKS_LIMIT)} zł</strong>. Firma jest zobowiązana do prowadzenia pełnych ksiąg rachunkowych.
+                            </p>
+                        </div>
+                    </div>
+                  )}
+
                 </div>
 
                 {/* Panel 2: Ustawienia */}
@@ -598,18 +623,18 @@
                         <option value="preferencyjny">ZUS Preferencyjny (456,18 zł)</option>
                         <option value="maly_plus">Mały ZUS Plus (min. 456,18 zł)</option>
                       </select>
-                       <p className="tw-text-[10px] tw-text-slate-400 tw-mt-1.5 tw-font-medium">Duży ZUS wg prognozy 9420 zł (M.P. 2025 poz. 1206).</p>
+                       <p className="tw-text-[10px] tw-text-slate-400 tw-mt-1.5 tw-font-medium">Podstawa Duży ZUS: 9420 zł (M.P. 2025 poz. 1206).</p>
                     </div>
                     <div>
                       <label className="tw-block tw-text-[11px] tw-font-bold tw-text-slate-500 tw-uppercase tw-tracking-wider tw-mb-1.5">Stawka Ryczałtu</label>
-                      <select value={ryczaltRate} onChange={(e) => setRyczaltRate(Number(e.target.value))} className="tw-font-medium tw-text-slate-700">
-                        <option value={17}>17% - Wolne zawody</option>
-                        <option value={15}>15% - IT, Doradztwo</option>
-                        <option value={14}>14% - Inżynieria, Zdrowie</option>
-                        <option value={12}>12% - IT: Programiści</option>
-                        <option value={8.5}>8.5% - Usługi, Najem</option>
-                        <option value={5.5}>5.5% - Budowlanka</option>
-                        <option value={3}>3.0% - Handel</option>
+                      <select value={ryczaltRate} onChange={(e) => setRyczaltRate(Number(e.target.value))} className="tw-font-medium tw-text-slate-700 tw-text-xs">
+                        <option value={17}>17% - Prawnicy, Księgowi, Doradcy (PKWiU 69.10, 69.20, 70.22)</option>
+                        <option value={15}>15% - Marketing, PR, Pośrednictwo (PKWiU 73.1, 70.21, 46.1)</option>
+                        <option value={14}>14% - Inżynierzy, Architekci, Projektanci (PKWiU 71.11, 71.12, 74.10)</option>
+                        <option value={12}>12% - IT: Programiści, Admini, Wdrażeniowcy (PKWiU 62.01, 62.03, 62.02)</option>
+                        <option value={8.5}>8.5% - Najem, Edukacja, Usługi fryzjerskie (PKWiU 68.20, 85.5, 96.02)</option>
+                        <option value={5.5}>5.5% - Budowlanka, Transport towarowy, Wytwórstwo (PKWiU 41-43, 49.41)</option>
+                        <option value={3}>3.0% - Handel, Gastronomia, Usługi rolne (PKWiU 47, 56.10, 01.6)</option>
                       </select>
                     </div>
                   </div>
@@ -809,7 +834,7 @@
                         {/* Karta 1: Duży ZUS */}
                         <div className="tw-bg-slate-50 tw-p-4 tw-rounded-xl tw-border tw-border-slate-200">
                             <div className="tw-text-xs tw-font-bold tw-text-slate-400 tw-uppercase tw-tracking-wider tw-mb-2">Pełny ZUS (Duży)</div>
-                            <div className="tw-text-2xl tw-font-extrabold tw-text-slate-800 tw-mb-1">~1 926,76 zł</div>
+                            <div className="tw-text-2xl tw-font-extrabold tw-text-slate-800 tw-mb-1">1 926,76 zł</div>
                             <div className="tw-text-xs tw-text-slate-600 tw-font-medium">miesięcznie (z chorobowym)</div>
                             <div className="tw-mt-3 tw-pt-3 tw-border-t tw-border-slate-200 tw-text-xs tw-text-slate-500">
                                 <span className="tw-block tw-mb-1">Podstawa: <strong>5 652 zł</strong> (60% prognozy)</span>
@@ -820,7 +845,7 @@
                         {/* Karta 2: Preferencyjny ZUS */}
                         <div className="tw-bg-slate-50 tw-p-4 tw-rounded-xl tw-border tw-border-slate-200">
                             <div className="tw-text-xs tw-font-bold tw-text-slate-400 tw-uppercase tw-tracking-wider tw-mb-2">ZUS Preferencyjny</div>
-                            <div className="tw-text-2xl tw-font-extrabold tw-text-slate-800 tw-mb-1">~456,18 zł</div>
+                            <div className="tw-text-2xl tw-font-extrabold tw-text-slate-800 tw-mb-1">456,18 zł</div>
                             <div className="tw-text-xs tw-text-slate-600 tw-font-medium">miesięcznie (z chorobowym)</div>
                             <div className="tw-mt-3 tw-pt-3 tw-border-t tw-border-slate-200 tw-text-xs tw-text-slate-500">
                                 <span className="tw-block tw-mb-1">Podstawa: <strong>1 441,80 zł</strong> (30% min. płacy)</span>
@@ -840,9 +865,7 @@
                         </div>
                     </div>
                     
-                    <div className="tw-mt-4 tw-text-[10px] tw-text-slate-400 tw-text-center">
-                        * Wyliczenia mają charakter szacunkowy na podstawie prognozowanego przeciętnego wynagrodzenia (9 420 zł) oraz płacy minimalnej (4 806 zł). Ostateczne wartości mogą się nieznacznie różnić w zależności od wskaźnika wypadkowego.
-                    </div>
+                    {/* USUNIĘTO DISCLAIMER O SZACUNKACH */}
                 </div>
             </div>
 
@@ -919,27 +942,25 @@
 
                         {/* NOWA SEKCJA: RYCZAŁT */}
                         <div className="tw-mt-6 tw-pt-6 tw-border-t tw-border-slate-100">
-                            <h4 class="tw-text-sm tw-font-bold tw-text-slate-700 tw-mb-4">Składka zdrowotna na Ryczałcie (Szacunek 2026)</h4>
+                            <h4 class="tw-text-sm tw-font-bold tw-text-slate-700 tw-mb-4">Składka zdrowotna na Ryczałcie (Stawki 2026)</h4>
                             <div className="tw-grid tw-grid-cols-1 md:tw-grid-cols-3 tw-gap-4">
                                 <div className="tw-bg-slate-50 tw-p-3 tw-rounded-lg tw-text-center tw-border tw-border-slate-100">
                                     <div className="tw-text-[10px] tw-font-bold tw-text-slate-400 tw-uppercase tw-mb-1">Przychód do 60 tys. zł</div>
-                                    <div className="tw-text-lg tw-font-bold tw-text-indigo-700">~480 zł</div>
+                                    <div className="tw-text-lg tw-font-bold tw-text-indigo-700">480 zł</div>
                                     <div className="tw-text-[10px] tw-text-slate-500">60% przeciętnego wyn.</div>
                                 </div>
                                 <div className="tw-bg-slate-50 tw-p-3 tw-rounded-lg tw-text-center tw-border tw-border-slate-100">
                                     <div className="tw-text-[10px] tw-font-bold tw-text-slate-400 tw-uppercase tw-mb-1">Przychód 60-300 tys. zł</div>
-                                    <div className="tw-text-lg tw-font-bold tw-text-indigo-700">~800 zł</div>
+                                    <div className="tw-text-lg tw-font-bold tw-text-indigo-700">800 zł</div>
                                     <div className="tw-text-[10px] tw-text-slate-500">100% przeciętnego wyn.</div>
                                 </div>
                                 <div className="tw-bg-slate-50 tw-p-3 tw-rounded-lg tw-text-center tw-border tw-border-slate-100">
                                     <div className="tw-text-[10px] tw-font-bold tw-text-slate-400 tw-uppercase tw-mb-1">Przychód pow. 300 tys. zł</div>
-                                    <div className="tw-text-lg tw-font-bold tw-text-indigo-700">~1 440 zł</div>
+                                    <div className="tw-text-lg tw-font-bold tw-text-indigo-700">1 440 zł</div>
                                     <div className="tw-text-[10px] tw-text-slate-500">180% przeciętnego wyn.</div>
                                 </div>
                             </div>
-                            <p className="tw-text-[10px] tw-text-slate-400 tw-mt-3 tw-italic">
-                                * Dokładne stawki dla ryczałtu zależą od przeciętnego wynagrodzenia w sektorze przedsiębiorstw za IV kwartał 2025 r. (ogłaszanego w styczniu 2026).
-                            </p>
+                            {/* USUNIĘTO DISCLAIMER O RYCZAŁCIE */}
                         </div>
 
                     </div>
