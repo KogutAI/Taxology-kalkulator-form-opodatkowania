@@ -25,14 +25,12 @@
             orange: '#fdaa63',  // Dodatkowy akcent, ostrzeżenia
             dark: '#00313c',    // Tekst, tła, obramowania
             
-            // Odcienie generowane z koloru Dark (#00313c) dla teł i obramowań
             'dark-5': 'rgba(0, 49, 60, 0.03)',  // Bardzo jasne tło
             'dark-10': 'rgba(0, 49, 60, 0.08)', // Obramowania jasne
             'dark-20': 'rgba(0, 49, 60, 0.15)', // Obramowania ciemniejsze
             'dark-40': 'rgba(0, 49, 60, 0.40)', // Tekst poboczny
             'dark-60': 'rgba(0, 49, 60, 0.60)', // Tekst główny/ikony
             
-            // Odcienie dla zieleni i pomarańczu (tła)
             'green-10': 'rgba(34, 212, 124, 0.10)',
             'orange-10': 'rgba(253, 170, 99, 0.15)',
           }
@@ -164,7 +162,7 @@
         font-weight: 600;
     }
 
-    /* Wskaźnik - Używamy Zielonego (#22d47c) z lekką przezroczystością lub białego z cieniem */
+    /* Wskaźnik */
     .segmented-control-indicator {
         position: absolute;
         top: 4px;
@@ -228,6 +226,12 @@
     const AlertTriangleIcon = ({ size = 24, className }) => (
         <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><line x1="12" x2="12" y1="9" y2="13"/><line x1="12" x2="12.01" y1="17" y2="17"/></svg>
     );
+    const PlusCircleIcon = ({ size = 24, className }) => (
+        <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><circle cx="12" cy="12" r="10"/><path d="M8 12h8"/><path d="M12 8v8"/></svg>
+    );
+    const TrashIcon = ({ size = 24, className }) => (
+        <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg>
+    );
 
     const TAX_FREE_AMOUNT = 30000;
     const TAX_THRESHOLD = 120000;
@@ -255,7 +259,6 @@
         return Math.round(num).toString().replace(/\B(?=(\d{3})+(?!\d))/g, " ");
     };
 
-    // --- FIX: PRZENIESIONO Z KOMPONENTU DO ZAKRESU GLOBALNEGO ---
     const formatCurrencyInput = (val) => {
         if (val === null || val === undefined) return '';
         return Math.round(val).toString().replace(/\B(?=(\d{3})+(?!\d))/g, " ");
@@ -309,19 +312,24 @@
 
     const calculateTaxes = (
         monthlyRevenue, 
+        monthlyRevenue2, // Nowy parametr
         monthlyCosts, 
         ryczaltRate, 
+        ryczaltRate2, // Nowy parametr
         zusType, 
         isJointSettlement, 
         spouseMonthlyIncome,
         numberOfChildren
     ) => {
-        const revenue = monthlyRevenue || 0;
+        const revenue1 = monthlyRevenue || 0;
+        const revenue2 = monthlyRevenue2 || 0;
+        const totalMonthlyRevenue = revenue1 + revenue2;
+        
         const costs = monthlyCosts || 0;
         const spouseIncome = spouseMonthlyIncome || 0;
         const childrenCount = numberOfChildren || 0;
         
-        const annualRevenue = revenue * 12;
+        const annualRevenue = totalMonthlyRevenue * 12;
         const annualCosts = costs * 12;
         const monthlySocialZus = MONTHLY_ZUS_RATES[zusType];
         const annualSocialZus = monthlySocialZus * 12;
@@ -403,20 +411,33 @@
             details: 'Stała stawka 19%. Brak możliwości wspólnego rozliczenia.' 
         });
 
-        // RYCZAŁT
-        const ryczaltTaxBase = Math.max(0, annualRevenue - annualSocialZus);
-        const ryczaltTax = ryczaltTaxBase * (ryczaltRate / 100);
-        const ryczaltSolidarityTax = 0; 
+        // RYCZAŁT (Zaktualizowana logika dla 2 stawek)
         let monthlyRyczaltHealth = 0;
         if (annualRevenue < 60000) monthlyRyczaltHealth = RYCZALT_HEALTH_RATES.low;
         else if (annualRevenue < 300000) monthlyRyczaltHealth = RYCZALT_HEALTH_RATES.mid;
         else monthlyRyczaltHealth = RYCZALT_HEALTH_RATES.high;
         const annualRyczaltHealth = monthlyRyczaltHealth * 12;
+
+        // Proporcjonalne odliczenie ZUS
+        let ryczaltTax = 0;
+        const totalAnnualRevenueForRyczalt = (revenue1 + revenue2) * 12;
+        
+        if (totalAnnualRevenueForRyczalt > 0) {
+            const share1 = (revenue1 * 12) / totalAnnualRevenueForRyczalt;
+            const share2 = (revenue2 * 12) / totalAnnualRevenueForRyczalt;
+            
+            const taxBase1 = Math.max(0, (revenue1 * 12) - (annualSocialZus * share1));
+            const taxBase2 = Math.max(0, (revenue2 * 12) - (annualSocialZus * share2));
+            
+            ryczaltTax = (taxBase1 * (ryczaltRate / 100)) + (taxBase2 * (ryczaltRate2 / 100));
+        }
+
+        const ryczaltSolidarityTax = 0; 
         const ryczaltNet = annualRevenue - annualCosts - annualSocialZus - annualRyczaltHealth - ryczaltTax;
         
         results.push({ 
             id: 'ryczalt', 
-            name: `Ryczałt (${ryczaltRate}%)`, 
+            name: revenue2 > 0 ? `Ryczałt (Mieszany)` : `Ryczałt (${ryczaltRate}%)`, 
             net: ryczaltNet, 
             tax: ryczaltTax, 
             solidarity: ryczaltSolidarityTax,
@@ -425,7 +446,7 @@
             monthlyTax: ryczaltTax / 12,
             monthlyHealth: monthlyRyczaltHealth, 
             monthlySocialZus: monthlySocialZus,
-            details: 'Opodatkowanie od przychodu.' 
+            details: revenue2 > 0 ? 'Opodatkowanie mieszane.' : 'Opodatkowanie od przychodu.' 
         });
         
         return results.sort((a, b) => b.net - a.net);
@@ -433,8 +454,13 @@
 
     function TaxCalculator2026() {
       const [monthlyRevenue, setMonthlyRevenue] = useState(10000); 
+      const [monthlyRevenue2, setMonthlyRevenue2] = useState(null); // Stan dla drugiego przychodu
+      const [showSecondRevenue, setShowSecondRevenue] = useState(false); // Toggle widoczności
+
       const [monthlyCosts, setMonthlyCosts] = useState(0);
       const [ryczaltRate, setRyczaltRate] = useState(12);
+      const [ryczaltRate2, setRyczaltRate2] = useState(8.5); // Stawka dla drugiego przychodu
+
       const [zusType, setZusType] = useState('duzy');
       const [isJointSettlement, setIsJointSettlement] = useState(false);
       const [spouseMonthlyIncome, setSpouseMonthlyIncome] = useState(null);
@@ -442,40 +468,59 @@
       const [inputMode, setInputMode] = useState('monthly'); 
       
       const monthlyRevenueCalc = useMemo(() => {
+          let rev1 = 0;
+          let rev2 = 0;
+          if (monthlyRevenue !== null) rev1 = inputMode === 'monthly' ? monthlyRevenue : monthlyRevenue / 12;
+          if (monthlyRevenue2 !== null) rev2 = inputMode === 'monthly' ? monthlyRevenue2 : monthlyRevenue2 / 12;
+          return rev1 + rev2; // Suma do ogólnych obliczeń (Skala/Liniowy)
+      }, [monthlyRevenue, monthlyRevenue2, inputMode]);
+
+      // Osobne wartości miesięczne do Ryczałtu
+      const monthlyRevenue1Raw = useMemo(() => {
           if (monthlyRevenue === null) return 0;
           return inputMode === 'monthly' ? monthlyRevenue : monthlyRevenue / 12;
       }, [monthlyRevenue, inputMode]);
+
+      const monthlyRevenue2Raw = useMemo(() => {
+          if (monthlyRevenue2 === null || !showSecondRevenue) return 0;
+          return inputMode === 'monthly' ? monthlyRevenue2 : monthlyRevenue2 / 12;
+      }, [monthlyRevenue2, inputMode, showSecondRevenue]);
+
 
       const monthlyCostsCalc = useMemo(() => {
           if (monthlyCosts === null) return 0;
           return inputMode === 'monthly' ? monthlyCosts : monthlyCosts / 12;
       }, [monthlyCosts, inputMode]);
 
-      const hasInputCalc = useMemo(() => monthlyRevenueCalc !== null && monthlyRevenueCalc >= 0, [monthlyRevenueCalc]);
+      const hasInputCalc = useMemo(() => (monthlyRevenueCalc !== null && monthlyRevenueCalc >= 0), [monthlyRevenueCalc]);
       
       const resultsCalc = useMemo(() => {
         if (!hasInputCalc) return [];
         return calculateTaxes(
-            monthlyRevenueCalc, 
+            monthlyRevenue1Raw, 
+            monthlyRevenue2Raw,
             monthlyCostsCalc, 
             ryczaltRate, 
+            ryczaltRate2,
             zusType, 
             isJointSettlement, 
             spouseMonthlyIncome,
             numberOfChildren
         );
-      }, [monthlyRevenueCalc, monthlyCostsCalc, ryczaltRate, zusType, isJointSettlement, spouseMonthlyIncome, numberOfChildren]);
+      }, [monthlyRevenue1Raw, monthlyRevenue2Raw, monthlyCostsCalc, ryczaltRate, ryczaltRate2, zusType, isJointSettlement, spouseMonthlyIncome, numberOfChildren]);
       
       const bestOptionCalc = resultsCalc[0] || {};
       const totalAnnualRevenueCalc = monthlyRevenueCalc * 12;
       const totalAnnualCostsCalc = monthlyCostsCalc * 12;
-      const totalAnnualIncomeCalc = totalAnnualRevenueCalc - totalAnnualCostsCalc;
       const isFullAccounting = totalAnnualRevenueCalc > ACCOUNTING_BOOKS_LIMIT;
 
       const handleModeChange = (newMode) => {
           if (newMode === inputMode) return;
           if (monthlyRevenue !== null) {
               setMonthlyRevenue(newMode === 'yearly' ? monthlyRevenue * 12 : monthlyRevenue / 12);
+          }
+          if (monthlyRevenue2 !== null) {
+              setMonthlyRevenue2(newMode === 'yearly' ? monthlyRevenue2 * 12 : monthlyRevenue2 / 12);
           }
           if (monthlyCosts !== null) {
               setMonthlyCosts(newMode === 'yearly' ? monthlyCosts * 12 : monthlyCosts / 12);
@@ -492,34 +537,41 @@
         }
       };
 
+      const toggleSecondRevenue = () => {
+          if (showSecondRevenue) {
+              setMonthlyRevenue2(null); // Resetuj wartość przy ukrywaniu
+          }
+          setShowSecondRevenue(!showSecondRevenue);
+      }
+
+      // Komponent wyboru stawki ryczałtu (reusable)
+      const RyczaltRateSelect = ({ value, onChange, label }) => (
+        <div>
+            <label className="tw-block tw-text-[11px] tw-font-bold tw-text-tax-dark-40 tw-uppercase tw-tracking-wider tw-mb-1.5">{label}</label>
+            <select value={value} onChange={onChange} className="tw-font-medium tw-text-tax-dark tw-text-xs">
+                <option value={17}>17% - Prawnicy, Księgowi (PKWiU 69.10)</option>
+                <option value={15}>15% - Marketing, PR (PKWiU 73.1)</option>
+                <option value={14}>14% - Inżynieria, Architektura (PKWiU 71.1)</option>
+                <option value={12}>12% - IT: Programiści (PKWiU 62.01)</option>
+                <option value={8.5}>8.5% - Usługi, Najem (PKWiU 68.20)</option>
+                <option value={5.5}>5.5% - Budowlanka (PKWiU 41-43)</option>
+                <option value={3}>3.0% - Handel (PKWiU 47)</option>
+            </select>
+        </div>
+      );
+
       return (
         <div className="tw-min-h-screen tw-bg-tax-dark-5 tw-p-2 md:tw-p-8">
           <div className="tw-max-w-[90rem] tw-mx-auto">
             
-            {/* Header */}
-            <header className="tw-mb-6 md:tw-mb-8 tw-flex tw-flex-col md:tw-flex-row tw-items-center tw-justify-between tw-gap-6">
-              <div className="tw-flex tw-flex-col md:tw-flex-row tw-items-center tw-gap-4 tw-text-center md:tw-text-left">
-                <div className="tw-bg-tax-dark tw-p-3 tw-rounded-xl tw-shadow-lg tw-text-tax-green tw-flex tw-items-center tw-justify-center">
-                  <TaxologySignet size={32} />
-                </div>
-                <div>
-                  <h1 className="tw-text-2xl md:tw-text-3xl tw-font-extrabold tw-text-tax-dark tw-m-0 tw-tracking-tight">Kalkulator Podatkowy 2026</h1>
-                  <p className="tw-text-sm md:tw-text-base tw-text-tax-dark-60 tw-m-0 tw-font-medium">Na podstawie oficjalnych wskaźników</p>
-                </div>
-              </div>
-              <div className="tw-flex-shrink-0 tw-opacity-90 hover:tw-opacity-100 tw-transition-opacity">
-                  <span className="tw-text-2xl tw-font-black tw-tracking-tighter tw-text-tax-dark">
-                    taxology<span className="tw-text-tax-green">.</span>
-                  </span>
-              </div>
-            </header>
+            {/* USUNIĘTO HEADER Z LOGO I TYTUŁEM ZGODNIE Z ŻĄDANIEM */}
 
             <div className="tw-grid tw-grid-cols-1 lg:tw-grid-cols-12 tw-gap-6 md:tw-gap-8">
               
               {/* LEWA KOLUMNA */}
               <div className="lg:tw-col-span-3 tw-flex tw-flex-col tw-gap-4 md:tw-gap-6 tw-h-full">
                 
-                {/* Panel 1 */}
+                {/* Panel 1: Parametry Finansowe */}
                 <div className="tw-bg-white tw-p-5 md:tw-p-6 tw-rounded-2xl tw-shadow-modern tw-border tw-border-tax-dark-10 tw-transition-all hover:tw-shadow-modern-lg tw-flex-1 tw-flex tw-flex-col">
                   <div className="tw-flex tw-justify-between tw-items-center tw-mb-4">
                       <h2 className="tw-text-base tw-font-bold tw-flex tw-items-center tw-gap-3 tw-text-tax-dark tw-m-0">
@@ -536,21 +588,57 @@
                       <button onClick={() => handleModeChange('yearly')} className={inputMode === 'yearly' ? 'active' : ''}>Rocznie</button>
                   </div>
 
-                  <div className="tw-grid tw-grid-cols-1 sm:tw-grid-cols-2 lg:tw-grid-cols-2 tw-gap-4">
-                    <div>
-                      <label className="tw-block tw-text-[11px] tw-font-bold tw-text-tax-dark-40 tw-uppercase tw-tracking-wider tw-mb-1.5">Przychód</label>
-                      <div className="tw-relative currency-input">
-                        <input type="text" inputMode="numeric" value={formatCurrencyInput(monthlyRevenue)} onChange={(e) => handleCurrencyChange(e, setMonthlyRevenue)} placeholder="0" className="tw-w-full tw-pr-10 tw-font-semibold tw-text-tax-dark" />
-                        <span className="tw-absolute tw-right-3 tw-top-1/2 tw-transform tw--translate-y-1/2 tw-text-tax-dark-40 tw-text-xs tw-font-medium">zł</span>
+                  <div className="tw-space-y-4">
+                      {/* PRZYCHÓD GŁÓWNY */}
+                      <div className="tw-grid tw-grid-cols-1 sm:tw-grid-cols-2 lg:tw-grid-cols-2 tw-gap-4">
+                        <div>
+                          <label className="tw-block tw-text-[11px] tw-font-bold tw-text-tax-dark-40 tw-uppercase tw-tracking-wider tw-mb-1.5">Przychód {showSecondRevenue ? '1' : ''}</label>
+                          <div className="tw-relative currency-input">
+                            <input type="text" inputMode="numeric" value={formatCurrencyInput(monthlyRevenue)} onChange={(e) => handleCurrencyChange(e, setMonthlyRevenue)} placeholder="0" className="tw-w-full tw-pr-10 tw-font-semibold tw-text-tax-dark" />
+                            <span className="tw-absolute tw-right-3 tw-top-1/2 tw-transform tw--translate-y-1/2 tw-text-tax-dark-40 tw-text-xs tw-font-medium">zł</span>
+                          </div>
+                        </div>
+                        <div>
+                          <label className="tw-block tw-text-[11px] tw-font-bold tw-text-tax-dark-40 tw-uppercase tw-tracking-wider tw-mb-1.5">Koszty</label>
+                          <div className="tw-relative currency-input">
+                            <input type="text" inputMode="numeric" value={formatCurrencyInput(monthlyCosts)} onChange={(e) => handleCurrencyChange(e, setMonthlyCosts)} placeholder="0" className="tw-w-full tw-pr-10 tw-font-semibold tw-text-tax-dark" />
+                            <span className="tw-absolute tw-right-3 tw-top-1/2 tw-transform tw--translate-y-1/2 tw-text-tax-dark-40 tw-text-xs tw-font-medium">zł</span>
+                          </div>
+                        </div>
                       </div>
-                    </div>
-                    <div>
-                      <label className="tw-block tw-text-[11px] tw-font-bold tw-text-tax-dark-40 tw-uppercase tw-tracking-wider tw-mb-1.5">Koszty</label>
-                      <div className="tw-relative currency-input">
-                        <input type="text" inputMode="numeric" value={formatCurrencyInput(monthlyCosts)} onChange={(e) => handleCurrencyChange(e, setMonthlyCosts)} placeholder="0" className="tw-w-full tw-pr-10 tw-font-semibold tw-text-tax-dark" />
-                        <span className="tw-absolute tw-right-3 tw-top-1/2 tw-transform tw--translate-y-1/2 tw-text-tax-dark-40 tw-text-xs tw-font-medium">zł</span>
-                      </div>
-                    </div>
+
+                      {/* BUTTON DODAJ DRUGI PRZYCHÓD */}
+                      {!showSecondRevenue && (
+                          <button onClick={toggleSecondRevenue} className="tw-text-xs tw-font-semibold tw-text-tax-green hover:tw-text-tax-dark tw-flex tw-items-center tw-gap-1 tw-transition-colors tw-mt-2">
+                              <PlusCircleIcon size={16} />
+                              Dodaj przychód opodatkowany inną stawką ryczałtu
+                          </button>
+                      )}
+
+                      {/* DRUGI PRZYCHÓD (OPCJONALNY) */}
+                      {showSecondRevenue && (
+                          <div className="tw-animate-in tw-fade-in tw-slide-in-from-top-2 tw-pt-3 tw-border-t tw-border-tax-dark-10 tw-relative">
+                              <button onClick={toggleSecondRevenue} className="tw-absolute tw-right-0 tw-top-3 tw-text-tax-dark-40 hover:tw-text-tax-orange tw-transition-colors" title="Usuń drugi przychód">
+                                  <TrashIcon size={16} />
+                              </button>
+                              <div className="tw-grid tw-grid-cols-1 sm:tw-grid-cols-2 lg:tw-grid-cols-2 tw-gap-4">
+                                  <div>
+                                      <label className="tw-block tw-text-[11px] tw-font-bold tw-text-tax-dark-40 tw-uppercase tw-tracking-wider tw-mb-1.5">Przychód 2</label>
+                                      <div className="tw-relative currency-input">
+                                          <input type="text" inputMode="numeric" value={formatCurrencyInput(monthlyRevenue2)} onChange={(e) => handleCurrencyChange(e, setMonthlyRevenue2)} placeholder="0" className="tw-w-full tw-pr-10 tw-font-semibold tw-text-tax-dark" />
+                                          <span className="tw-absolute tw-right-3 tw-top-1/2 tw-transform tw--translate-y-1/2 tw-text-tax-dark-40 tw-text-xs tw-font-medium">zł</span>
+                                      </div>
+                                  </div>
+                                  <div>
+                                      <RyczaltRateSelect 
+                                          value={ryczaltRate2} 
+                                          onChange={(e) => setRyczaltRate2(Number(e.target.value))} 
+                                          label="Stawka (Przychód 2)" 
+                                      />
+                                  </div>
+                              </div>
+                          </div>
+                      )}
                   </div>
 
                   {isFullAccounting && (
@@ -588,16 +676,11 @@
                        <p className="tw-text-[10px] tw-text-tax-dark-40 tw-mt-1.5 tw-font-medium">Podstawa Duży ZUS: 9420 zł (M.P. 2025 poz. 1206).</p>
                     </div>
                     <div>
-                      <label className="tw-block tw-text-[11px] tw-font-bold tw-text-tax-dark-40 tw-uppercase tw-tracking-wider tw-mb-1.5">Stawka Ryczałtu</label>
-                      <select value={ryczaltRate} onChange={(e) => setRyczaltRate(Number(e.target.value))} className="tw-font-medium tw-text-tax-dark tw-text-xs">
-                        <option value={17}>17% - Prawnicy, Księgowi, Doradcy (PKWiU 69.10, 69.20, 70.22)</option>
-                        <option value={15}>15% - Marketing, PR, Pośrednictwo (PKWiU 73.1, 70.21, 46.1)</option>
-                        <option value={14}>14% - Inżynierzy, Architekci, Projektanci (PKWiU 71.11, 71.12, 74.10)</option>
-                        <option value={12}>12% - IT: Programiści, Admini, Wdrażeniowcy (PKWiU 62.01, 62.03, 62.02)</option>
-                        <option value={8.5}>8.5% - Najem, Edukacja, Usługi fryzjerskie (PKWiU 68.20, 85.5, 96.02)</option>
-                        <option value={5.5}>5.5% - Budowlanka, Transport towarowy, Wytwórstwo (PKWiU 41-43, 49.41)</option>
-                        <option value={3}>3.0% - Handel, Gastronomia, Usługi rolne (PKWiU 47, 56.10, 01.6)</option>
-                      </select>
+                        <RyczaltRateSelect 
+                            value={ryczaltRate} 
+                            onChange={(e) => setRyczaltRate(Number(e.target.value))} 
+                            label={showSecondRevenue ? "Stawka Ryczałtu (Przychód 1)" : "Stawka Ryczałtu"} 
+                        />
                     </div>
                   </div>
                 </div>
