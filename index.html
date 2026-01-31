@@ -246,10 +246,11 @@
         maly_plus: 456.18,
     };
 
+    // ZAKTUALIZOWANE STAWKI OFICJALNE (Baza: 9228,64 zł - GUS Q4 2025)
     const RYCZALT_HEALTH_RATES = {
-        low: 480,
-        mid: 800,
-        high: 1440
+        low: 498.35,   // 60% z 9228,64 * 9%
+        mid: 830.58,   // 100% z 9228,64 * 9%
+        high: 1495.04  // 180% z 9228,64 * 9%
     };
 
     const ACCOUNTING_BOOKS_LIMIT = 10646500;
@@ -978,21 +979,21 @@
                         </div>
 
                         <div className="tw-mt-6 tw-pt-6 tw-border-t tw-border-tax-dark-10">
-                            <h4 className="tw-text-sm tw-font-bold tw-text-tax-dark tw-mb-4">Składka zdrowotna na Ryczałcie (Stawki 2026)</h4>
+                            <h4 className="tw-text-sm tw-font-bold tw-text-tax-dark tw-mb-4">Składka zdrowotna na Ryczałcie (Oficjalne stawki 2026)</h4>
                             <div className="tw-grid tw-grid-cols-1 md:tw-grid-cols-3 tw-gap-4">
                                 <div className="tw-bg-tax-dark-5 tw-p-3 tw-rounded-lg tw-text-center tw-border tw-border-tax-dark-10">
                                     <div className="tw-text-[10px] tw-font-bold tw-text-tax-dark-40 tw-uppercase tw-mb-1">Przychód do 60 tys. zł</div>
-                                    <div className="tw-text-lg tw-font-bold tw-text-tax-dark">480 zł</div>
-                                    <div className="tw-text-[10px] tw-text-tax-dark-60">60% przeciętnego wyn.</div>
+                                    <div className="tw-text-lg tw-font-bold tw-text-tax-dark">498,35 zł</div>
+                                    <div className="tw-text-[10px] tw-text-tax-dark-60">60% przeciętnego wyn. (9 228,64 zł)</div>
                                 </div>
                                 <div className="tw-bg-tax-dark-5 tw-p-3 tw-rounded-lg tw-text-center tw-border tw-border-tax-dark-10">
                                     <div className="tw-text-[10px] tw-font-bold tw-text-tax-dark-40 tw-uppercase tw-mb-1">Przychód 60-300 tys. zł</div>
-                                    <div className="tw-text-lg tw-font-bold tw-text-tax-dark">800 zł</div>
+                                    <div className="tw-text-lg tw-font-bold tw-text-tax-dark">830,58 zł</div>
                                     <div className="tw-text-[10px] tw-text-tax-dark-60">100% przeciętnego wyn.</div>
                                 </div>
                                 <div className="tw-bg-tax-dark-5 tw-p-3 tw-rounded-lg tw-text-center tw-border tw-border-tax-dark-10">
                                     <div className="tw-text-[10px] tw-font-bold tw-text-tax-dark-40 tw-uppercase tw-mb-1">Przychód pow. 300 tys. zł</div>
-                                    <div className="tw-text-lg tw-font-bold tw-text-tax-dark">1 440 zł</div>
+                                    <div className="tw-text-lg tw-font-bold tw-text-tax-dark">1 495,04 zł</div>
                                     <div className="tw-text-[10px] tw-text-tax-dark-60">180% przeciętnego wyn.</div>
                                 </div>
                             </div>
